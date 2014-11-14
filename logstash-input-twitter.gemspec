@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
 
   s.name            = 'logstash-input-twitter'
-  s.version         = '0.1.3'
+  s.version         = '0.1.1'
   s.licenses        = ['Apache License (2.0)']
   s.summary         = "Read events from the twitter streaming api."
   s.description     = "Read events from the twitter streaming api."
