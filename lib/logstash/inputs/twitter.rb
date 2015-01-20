@@ -9,7 +9,6 @@ require "logstash/json"
 class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
   config_name "twitter"
-  milestone 1
 
   # Your twitter app's consumer key
   #
