@@ -48,6 +48,8 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # NB:  Per the Twitter API spec, the keywords, locations, and follows
   # parameters are or'ed together, rather than and'ed (which might have
   # been a reasonable expectation).
+  # See https://dev.twitter.com/streaming/overview/request-parameters for
+  # more details.
 
   # Any keywords to track in the twitter stream
   config :keywords, :validate => :array, :default => []
