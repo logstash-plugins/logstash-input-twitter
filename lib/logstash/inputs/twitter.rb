@@ -45,14 +45,20 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # application.
   config :oauth_token_secret, :validate => :password, :required => true
 
+  # NB:  Per the Twitter API spec, the keywords, locations, and follows
+  # parameters are or'ed together, rather than and'ed (which might have
+  # been a reasonable expectation).
+
   # Any keywords to track in the twitter stream
-  config :keywords, :validate => :array, :required => false
+  config :keywords, :validate => :array, :default => []
 
   # Any locations to track in the twitter stream
-  config :locations, :validate => :array, :required => false
+  # Per the Twitter spec, each value is of the form
+  # "lat1,lng1,lat2,lng2" to define a bounding box.
+  config :locations, :validate => :array, :default => []
 
   # Any users to follow in the twitter stream
-  config :follows, :validate => :array, :required => false
+  config :follows, :validate => :array, :default => []
 
   # Record full tweet object as given to us by the Twitter stream api.
   config :full_tweet, :validate => :boolean, :default => false
@@ -92,13 +98,13 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     @logger.info("Starting twitter tracking", :keywords => @keywords)
     begin
       options = {}
-      if defined? @keywords and @keywords.length > 0
+      if @keywords.length > 0
         options[:track] = @keywords.join(",")
       end
-      if defined? @locations and @locations.length > 0
+      if @locations.length > 0
         options[:locations] = @locations.join(",")
       end
-      if defined? @follows and @follows.length > 0
+      if @follows.length > 0
         options[:follow] = @follows.join(",")
       end
 
