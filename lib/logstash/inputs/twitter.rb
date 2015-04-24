@@ -46,7 +46,13 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   config :oauth_token_secret, :validate => :password, :required => true
 
   # Any keywords to track in the twitter stream
-  config :keywords, :validate => :array, :required => true
+  config :keywords, :validate => :array, :required => false
+
+  # Any locations to track in the twitter stream
+  config :locations, :validate => :array, :required => false
+
+  # Any users to follow in the twitter stream
+  config :follows, :validate => :array, :required => false
 
   # Record full tweet object as given to us by the Twitter stream api.
   config :full_tweet, :validate => :boolean, :default => false
@@ -85,31 +91,25 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   def run(queue)
     @logger.info("Starting twitter tracking", :keywords => @keywords)
     begin
-      @client.filter(:track => @keywords.join(",")) do |tweet|
-        if tweet.is_a?(Twitter::Tweet)
-          @logger.debug? && @logger.debug("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
-          if @full_tweet
-            event = LogStash::Event.new(LogStash::Util.stringify_symbols(tweet.to_hash))
-            event.timestamp = LogStash::Timestamp.new(tweet.created_at)
-          else
-            event = LogStash::Event.new(
-              LogStash::Event::TIMESTAMP => LogStash::Timestamp.new(tweet.created_at),
-              "message" => tweet.full_text,
-              "user" => tweet.user.screen_name,
-              "client" => tweet.source,
-              "retweeted" => tweet.retweeted?,
-              "source" => "http://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}"
-            )
-            event["in-reply-to"] = tweet.in_reply_to_status_id if tweet.reply?
-            unless tweet.urls.empty?
-              event["urls"] = tweet.urls.map(&:expanded_url).map(&:to_s)
-            end
-          end
+      options = {}
+      if defined? @keywords and @keywords.length > 0
+        options[:track] = @keywords.join(",")
+      end
+      if defined? @locations and @locations.length > 0
+        options[:locations] = @locations.join(",")
+      end
+      if defined? @follows and @follows.length > 0
+        options[:follow] = @follows.join(",")
+      end
 
-          decorate(event)
-          queue << event
-        end
-      end # client.filter
+      if options.empty?
+        @logger.debug? && @logger.debug("Listening on the firehose")
+        @client.firehose() { |tweet|  process_a_tweet( tweet, queue)}
+      else
+        @logger.debug? && @logger.debug("Filtering for tweets", :keys => options.keys)
+        @client.filter(options) { |tweet|  process_a_tweet( tweet, queue)}
+      end
+
     rescue LogStash::ShutdownSignal
       return
     rescue Twitter::Error::TooManyRequests => e
@@ -121,4 +121,32 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       retry
     end
   end # def run
+
+  protected
+  def process_a_tweet( tweet, queue)
+    if tweet.is_a?(Twitter::Tweet)
+      @logger.debug? && @logger.debug("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
+      if @full_tweet
+        event = LogStash::Event.new(LogStash::Util.stringify_symbols(tweet.to_hash))
+        event.timestamp = LogStash::Timestamp.new(tweet.created_at)
+      else
+        event = LogStash::Event.new(
+          LogStash::Event::TIMESTAMP => LogStash::Timestamp.new(tweet.created_at),
+          "message" => tweet.full_text,
+          "user" => tweet.user.screen_name,
+          "client" => tweet.source,
+          "retweeted" => tweet.retweeted?,
+          "source" => "http://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}"
+        )
+        event["in-reply-to"] = tweet.in_reply_to_status_id if tweet.reply?
+        unless tweet.urls.empty?
+          event["urls"] = tweet.urls.map(&:expanded_url).map(&:to_s)
+        end
+      end
+
+      decorate(event)
+      queue << event
+    end
+  end  # def process_a_tweet
+
 end # class LogStash::Inputs::Twitter
