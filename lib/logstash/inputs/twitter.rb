@@ -56,7 +56,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
   # Any locations to track in the twitter stream
   # Per the Twitter spec, each value is of the form
-  # "lat1,lng1,lat2,lng2" to define a bounding box.
+  # "lng1,lat1,lng2,lat2" to define a bounding box.
   config :locations, :validate => :array, :default => []
 
   # Any users to follow in the twitter stream
