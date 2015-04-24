@@ -110,10 +110,10 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
       if options.empty?
         @logger.debug? && @logger.debug("Listening on the firehose")
-        @client.firehose() { |tweet|  process_a_tweet( tweet, queue)}
+        @client.firehose() { |tweet| process_a_tweet(tweet, queue) }
       else
-        @logger.debug? && @logger.debug("Filtering for tweets", :keys => options.keys)
-        @client.filter(options) { |tweet|  process_a_tweet( tweet, queue)}
+        @logger.debug? && @logger.debug("Filtering for tweets", :options => options)
+        @client.filter(options) { |tweet| process_a_tweet(tweet, queue) }
       end
 
     rescue LogStash::ShutdownSignal
@@ -129,7 +129,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   end # def run
 
   protected
-  def process_a_tweet( tweet, queue)
+  def process_a_tweet(tweet, queue)
     if tweet.is_a?(Twitter::Tweet)
       @logger.debug? && @logger.debug("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
       if @full_tweet
