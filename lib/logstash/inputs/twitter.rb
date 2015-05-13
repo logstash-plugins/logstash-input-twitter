@@ -93,6 +93,13 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       c.access_token = @oauth_token
       c.access_token_secret = @oauth_token_secret.value
     end
+
+    @rest = Twitter::REST::Client.new do |c|
+      c.consumer_key = @consumer_key
+      c.consumer_secret = @consumer_secret.value
+      c.access_token = @oauth_token
+      c.access_token_secret = @oauth_token_secret.value
+    end
   end
 
   public
@@ -107,7 +114,8 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
         options[:locations] = @locations.join(",")
       end
       if @follows.length > 0
-        options[:follow] = @follows.join(",")
+        ids = @follows.map { |user| get_user_id( user) }.compact
+        options[:follow] =  ids.join(',')
       end
 
       if options.empty?
@@ -156,5 +164,16 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       queue << event
     end
   end  # def process_a_tweet
+
+  # Use a one-by-one call to user() rather than users() since the latter
+  # can only handle 100 usernames at a time
+  protected
+  def get_user_id( name)
+    if name.is_a?(Integer)
+      return name
+    end
+    usr = @rest.user(name)
+    return usr.id
+  end
 
 end # class LogStash::Inputs::Twitter
