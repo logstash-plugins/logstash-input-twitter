@@ -115,7 +115,10 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       end
       if @follows.length > 0
         ids = @follows.map { |user| get_user_id( user) }.compact
-        options[:follow] =  ids.join(',')
+        ids =  ids.keep_if { |v| not v.nil? }.join(',')
+        if ids != ''
+          options[:follow] =  ids
+        end
       end
 
       if options.empty?
@@ -166,14 +169,19 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   end  # def process_a_tweet
 
   # Use a one-by-one call to user() rather than users() since the latter
-  # can only handle 100 usernames at a time
+  # does not deal gracefully with an unknown user amongst valid users
   protected
   def get_user_id( name)
     if name.is_a?(Integer)
       return name
     end
-    usr = @rest.user(name)
-    return usr.id
+    begin
+        usr = @rest.user(name)
+        return usr.id
+    rescue Twitter::Error::NotFound => e
+      @logger.warn("Unknown twitter user", :user => name)
+    end
+    return nil
   end
 
 end # class LogStash::Inputs::Twitter
