@@ -45,8 +45,22 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # application.
   config :oauth_token_secret, :validate => :password, :required => true
 
+  # NB:  Per the Twitter API spec, the keywords, locations, and follows
+  # parameters are or'ed together, rather than and'ed (which might have
+  # been a reasonable expectation).
+  # See https://dev.twitter.com/streaming/overview/request-parameters for
+  # more details.
+
   # Any keywords to track in the twitter stream
-  config :keywords, :validate => :array, :required => true
+  config :keywords, :validate => :array, :default => []
+
+  # Any locations to track in the twitter stream
+  # Per the Twitter spec, each value is of the form
+  # "lng1,lat1,lng2,lat2" to define a bounding box.
+  config :locations, :validate => :array, :default => []
+
+  # Any users to follow in the twitter stream
+  config :follows, :validate => :array, :default => []
 
   # Record full tweet object as given to us by the Twitter stream api.
   config :full_tweet, :validate => :boolean, :default => false
@@ -79,37 +93,42 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       c.access_token = @oauth_token
       c.access_token_secret = @oauth_token_secret.value
     end
+
+    @rest = Twitter::REST::Client.new do |c|
+      c.consumer_key = @consumer_key
+      c.consumer_secret = @consumer_secret.value
+      c.access_token = @oauth_token
+      c.access_token_secret = @oauth_token_secret.value
+    end
   end
 
   public
   def run(queue)
     @logger.info("Starting twitter tracking", :keywords => @keywords)
     begin
-      @client.filter(:track => @keywords.join(",")) do |tweet|
-        if tweet.is_a?(Twitter::Tweet)
-          @logger.debug? && @logger.debug("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
-          if @full_tweet
-            event = LogStash::Event.new(LogStash::Util.stringify_symbols(tweet.to_hash))
-            event.timestamp = LogStash::Timestamp.new(tweet.created_at)
-          else
-            event = LogStash::Event.new(
-              LogStash::Event::TIMESTAMP => LogStash::Timestamp.new(tweet.created_at),
-              "message" => tweet.full_text,
-              "user" => tweet.user.screen_name,
-              "client" => tweet.source,
-              "retweeted" => tweet.retweeted?,
-              "source" => "http://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}"
-            )
-            event["in-reply-to"] = tweet.in_reply_to_status_id if tweet.reply?
-            unless tweet.urls.empty?
-              event["urls"] = tweet.urls.map(&:expanded_url).map(&:to_s)
-            end
-          end
-
-          decorate(event)
-          queue << event
+      options = {}
+      if @keywords.length > 0
+        options[:track] = @keywords.join(",")
+      end
+      if @locations.length > 0
+        options[:locations] = @locations.join(",")
+      end
+      if @follows.length > 0
+        ids = @follows.map { |user| get_user_id( user) }.compact
+        ids =  ids.keep_if { |v| not v.nil? }.join(',')
+        if ids != ''
+          options[:follow] =  ids
         end
-      end # client.filter
+      end
+
+      if options.empty?
+        @logger.debug? && @logger.debug("Listening on the firehose")
+        @client.firehose() { |tweet| process_a_tweet(tweet, queue) }
+      else
+        @logger.debug? && @logger.debug("Filtering for tweets", :options => options)
+        @client.filter(options) { |tweet| process_a_tweet(tweet, queue) }
+      end
+
     rescue LogStash::ShutdownSignal
       return
     rescue Twitter::Error::TooManyRequests => e
@@ -121,4 +140,48 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       retry
     end
   end # def run
+
+  protected
+  def process_a_tweet(tweet, queue)
+    if tweet.is_a?(Twitter::Tweet)
+      @logger.debug? && @logger.debug("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
+      if @full_tweet
+        event = LogStash::Event.new(LogStash::Util.stringify_symbols(tweet.to_hash))
+        event.timestamp = LogStash::Timestamp.new(tweet.created_at)
+      else
+        event = LogStash::Event.new(
+          LogStash::Event::TIMESTAMP => LogStash::Timestamp.new(tweet.created_at),
+          "message" => tweet.full_text,
+          "user" => tweet.user.screen_name,
+          "client" => tweet.source,
+          "retweeted" => tweet.retweeted?,
+          "source" => "http://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}"
+        )
+        event["in-reply-to"] = tweet.in_reply_to_status_id if tweet.reply?
+        unless tweet.urls.empty?
+          event["urls"] = tweet.urls.map(&:expanded_url).map(&:to_s)
+        end
+      end
+
+      decorate(event)
+      queue << event
+    end
+  end  # def process_a_tweet
+
+  # Use a one-by-one call to user() rather than users() since the latter
+  # does not deal gracefully with an unknown user amongst valid users
+  protected
+  def get_user_id( name)
+    if name.is_a?(Integer)
+      return name
+    end
+    begin
+        usr = @rest.user(name)
+        return usr.id
+    rescue Twitter::Error::NotFound => e
+      @logger.warn("Unknown twitter user", :user => name)
+    end
+    return nil
+  end
+
 end # class LogStash::Inputs::Twitter
