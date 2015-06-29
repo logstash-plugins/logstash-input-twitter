@@ -106,6 +106,8 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
             end
           end
 
+          # Work around bugs in JrJackson. The standard serializer won't work till we upgrade
+          event["in-reply-to"] = nil if event["in-reply-to"].is_a?(Twitter::NullObject)
           decorate(event)
           queue << event
         end
