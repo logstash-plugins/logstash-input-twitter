@@ -4,6 +4,7 @@ require "logstash/namespace"
 require "logstash/timestamp"
 require "logstash/util"
 require "logstash/json"
+require "stud/interval"
 
 # Read events from the twitter streaming api.
 class LogStash::Inputs::Twitter < LogStash::Inputs::Base
@@ -96,41 +97,47 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       @client.filter(:track => @keywords.join(","),
                      :follow => @follows.join(","),
                      :location => @locations.join(",")) do |tweet|
+        return if stop?
         if tweet.is_a?(Twitter::Tweet)
-          @logger.debug? && @logger.debug("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
-          if @full_tweet
-            event = LogStash::Event.new(LogStash::Util.stringify_symbols(tweet.to_hash))
-            event.timestamp = LogStash::Timestamp.new(tweet.created_at)
-          else
-            event = LogStash::Event.new(
-              LogStash::Event::TIMESTAMP => LogStash::Timestamp.new(tweet.created_at),
-              "message" => tweet.full_text,
-              "user" => tweet.user.screen_name,
-              "client" => tweet.source,
-              "retweeted" => tweet.retweeted?,
-              "source" => "http://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}"
-            )
-            event["in-reply-to"] = tweet.in_reply_to_status_id if tweet.reply?
-            unless tweet.urls.empty?
-              event["urls"] = tweet.urls.map(&:expanded_url).map(&:to_s)
-            end
-          end
-
-          # Work around bugs in JrJackson. The standard serializer won't work till we upgrade
-          event["in-reply-to"] = nil if event["in-reply-to"].is_a?(Twitter::NullObject)
+          event = from_tweet(tweet)
           decorate(event)
           queue << event
         end
       end # client.filter
-    rescue LogStash::ShutdownSignal
-      return
     rescue Twitter::Error::TooManyRequests => e
       @logger.warn("Twitter too many requests error, sleeping for #{e.rate_limit.reset_in}s")
-      sleep(e.rate_limit.reset_in)
+      Stud.stoppable_sleep(e.rate_limit.reset_in) { stop? }
       retry
     rescue => e
       @logger.warn("Twitter client error", :message => e.message, :exception => e, :backtrace => e.backtrace)
       retry
     end
   end # def run
+
+  private
+  def from_tweet(tweet)
+    @logger.debug? && @logger.debug("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
+    if @full_tweet
+      event = LogStash::Event.new(LogStash::Util.stringify_symbols(tweet.to_hash))
+      event.timestamp = LogStash::Timestamp.new(tweet.created_at)
+    else
+      event = LogStash::Event.new(
+        LogStash::Event::TIMESTAMP => LogStash::Timestamp.new(tweet.created_at),
+        "message" => tweet.full_text,
+        "user" => tweet.user.screen_name,
+        "client" => tweet.source,
+        "retweeted" => tweet.retweeted?,
+        "source" => "http://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}"
+      )
+      event["in-reply-to"] = tweet.in_reply_to_status_id if tweet.reply?
+      unless tweet.urls.empty?
+        event["urls"] = tweet.urls.map(&:expanded_url).map(&:to_s)
+      end
+    end
+
+    # Work around bugs in JrJackson. The standard serializer won't work till we upgrade
+    event["in-reply-to"] = nil if event["in-reply-to"].is_a?(Twitter::NullObject)
+
+    event
+  end
 end # class LogStash::Inputs::Twitter
