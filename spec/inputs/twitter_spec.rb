@@ -13,7 +13,6 @@ describe LogStash::Inputs::Twitter do
     before :each do
       allow(Twitter::Streaming::Client).to receive(:new).and_return(MockClient.new)
     end
-
     it_behaves_like "an interruptible input plugin" do
       let(:config) do
         {
@@ -21,9 +20,13 @@ describe LogStash::Inputs::Twitter do
           'consumer_secret' => 'foo',
           'oauth_token' => 'foo',
           'oauth_token_secret' => 'foo',
-          'keywords' => ['foo', 'bar']
+          'keywords' => ['foo', 'keyword'],
+          'follows' => ['foo', 'follow'],
+          'locations' => ['foo', 'location'],
+          'full_tweet' => true
         }
       end
     end
+
   end
 end
