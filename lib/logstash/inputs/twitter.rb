@@ -98,7 +98,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     # monkey patch twitter gem to ignore json parsing error.
     # at the same time, use our own json parser
     # this has been tested with a specific gem version, raise if not the same
-    raise("Incompatible Twitter gem version and the LogStash::Json.load") unless Twitter::Version.to_s == "5.14.0"
+    raise("Incompatible Twitter gem version and the LogStash::Json.load") unless Twitter::Version.to_s == "5.15.0"
 
     Twitter::Streaming::Response.module_eval do
       def on_body(data)
@@ -113,9 +113,29 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       end
     end
 
+    Twitter::Streaming::Connection.class_eval do
+      def stream(request, response)
+        client_context = OpenSSL::SSL::SSLContext.new
+        uri_port       = request.uri.port || normalized_port(request.uri.normalized_scheme)
+        client         = @tcp_socket_class.new(Resolv.getaddress(request.uri.host), uri_port)
+        ssl_client     = @ssl_socket_class.new(client, client_context)
+
+        ssl_client.connect
+        request.stream(ssl_client)
+        while body = ssl_client.readpartial(1024) # rubocop:disable AssignmentInCondition
+          response << body
+        end
+      end
+
+      def normalized_port(scheme)
+        HTTP::URI.port_mapping[scheme]
+      end
+    end
+
     @rest_client     = Twitter::REST::Client.new       { |c|  configure(c) }
     @stream_client   = Twitter::Streaming::Client.new  { |c|  configure(c) }
     @twitter_options = build_options
+
   end
 
   def run(queue)

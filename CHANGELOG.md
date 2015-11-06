@@ -1,3 +1,7 @@
+## 2.2.0
+  - Upgraded the twitter gem to the last version available, 5.15.0
+  - Add proxy support.
+
 ## 2.1.0
   - Add an option to fetch data from the sample endpoint.
   - Add hashtags, symbols and user_mentions as data for the non extended tweet event.
