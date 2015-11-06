@@ -5,6 +5,7 @@ require "logstash/timestamp"
 require "logstash/util"
 require "logstash/json"
 require "stud/interval"
+require "logstash/inputs/twitter/patches"
 
 # Ingest events from the Twitter Streaming API.
 class LogStash::Inputs::Twitter < LogStash::Inputs::Base
@@ -88,6 +89,15 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # Lets you ingore the retweets coming out of the Twitter API. Default => false
   config :ignore_retweets, :validate => :boolean, :default => false
 
+  # When to use a proxy to handle the connections
+  config :use_proxy, :validate => :boolean, :default => false
+
+  # Location of the proxy, by default the same machine as the one running this LS instance
+  config :proxy_address, :validate => :string, :default => "127.0.0.1"
+
+  # Port where the proxy is listening, by default 3128 (squid)
+  config :proxy_port, :validate => :number, :default => 3128
+
   def register
     require "twitter"
 
@@ -98,44 +108,12 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     # monkey patch twitter gem to ignore json parsing error.
     # at the same time, use our own json parser
     # this has been tested with a specific gem version, raise if not the same
-    raise("Incompatible Twitter gem version and the LogStash::Json.load") unless Twitter::Version.to_s == "5.15.0"
 
-    Twitter::Streaming::Response.module_eval do
-      def on_body(data)
-        @tokenizer.extract(data).each do |line|
-          next if line.empty?
-          begin
-            @block.call(LogStash::Json.load(line, :symbolize_keys => true))
-          rescue LogStash::Json::ParserError
-            # silently ignore json parsing errors
-          end
-        end
-      end
-    end
-
-    Twitter::Streaming::Connection.class_eval do
-      def stream(request, response)
-        client_context = OpenSSL::SSL::SSLContext.new
-        uri_port       = request.uri.port || normalized_port(request.uri.normalized_scheme)
-        client         = @tcp_socket_class.new(Resolv.getaddress(request.uri.host), uri_port)
-        ssl_client     = @ssl_socket_class.new(client, client_context)
-
-        ssl_client.connect
-        request.stream(ssl_client)
-        while body = ssl_client.readpartial(1024) # rubocop:disable AssignmentInCondition
-          response << body
-        end
-      end
-
-      def normalized_port(scheme)
-        HTTP::URI.port_mapping[scheme]
-      end
-    end
+    LogStash::Inputs::TwitterPatches.patch
 
     @rest_client     = Twitter::REST::Client.new       { |c|  configure(c) }
     @stream_client   = Twitter::Streaming::Client.new  { |c|  configure(c) }
     @twitter_options = build_options
-
   end
 
   def run(queue)
@@ -227,6 +205,12 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     c.consumer_secret = @consumer_secret.value
     c.access_token = @oauth_token
     c.access_token_secret = @oauth_token_secret.value
+    if @use_proxy
+      c.proxy =  {
+        proxy_address: @proxy_address,
+        proxy_port: @proxy_port,
+      }
+    end
   end
 
   def build_options

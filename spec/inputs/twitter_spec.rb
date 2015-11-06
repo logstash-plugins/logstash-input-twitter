@@ -188,6 +188,5 @@ describe LogStash::Inputs::Twitter do
       end
 
     end
-
   end
 end

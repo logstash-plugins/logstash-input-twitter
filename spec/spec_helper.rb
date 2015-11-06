@@ -6,7 +6,6 @@ class MockClient
   def filter(options)
     loop { yield }
   end
-
   alias_method :sample, :filter
 end
 
