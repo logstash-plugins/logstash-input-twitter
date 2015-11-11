@@ -95,7 +95,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       end
     end
 
-    @rest_client    = Twitter::REST::Client.new { |c|  configure(c) }
+    @rest_client    = Twitter::REST::Client.new      { |c|  configure(c) }
     @stream_client  = Twitter::Streaming::Client.new { |c|  configure(c) }
     @filter_options = build_options
   end
@@ -145,14 +145,21 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       event = LogStash::Event.new(LogStash::Util.stringify_symbols(tweet.to_hash))
       event.timestamp = LogStash::Timestamp.new(tweet.created_at)
     else
-      event = LogStash::Event.new(
+
+      attributes = {
         LogStash::Event::TIMESTAMP => LogStash::Timestamp.new(tweet.created_at),
         "message" => tweet.full_text,
         "user" => tweet.user.screen_name,
         "client" => tweet.source,
         "retweeted" => tweet.retweeted?,
         "source" => "http://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}"
-      )
+      }
+
+      attributes["hashtags"] = tweet.hashtags
+      attributes["symbols"]  = tweet.symbols
+      attributes["user_mentions"]  = tweet.user_mentions
+
+      event = LogStash::Event.new(attributes)
       event["in-reply-to"] = tweet.in_reply_to_status_id if tweet.reply?
       unless tweet.urls.empty?
         event["urls"] = tweet.urls.map(&:expanded_url).map(&:to_s)

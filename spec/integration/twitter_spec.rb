@@ -52,10 +52,24 @@ describe LogStash::Inputs::Twitter do
         end
       end
 
+      let(:event) { events.first }
+
       it "receive a list of events from the twitter stream" do
         expect(events.count).to eq(3)
       end
-    end
 
+      it "contains the hashtags" do
+        expect(event["hashtags"]).to be_truthy
+      end
+
+       it "contains the symbols" do
+        expect(event["symbols"]).to be_truthy
+      end
+
+       it "contains the user_mentions" do
+         expect(event["user_mentions"]).to be_truthy
+       end
+
+    end
   end
 end
