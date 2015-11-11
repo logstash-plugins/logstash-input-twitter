@@ -10,9 +10,9 @@ describe LogStash::Inputs::Twitter do
          twitter {
             consumer_key => '#{ENV['TWITTER_CONSUMER_KEY']}'
             consumer_secret => '#{ENV['TWITTER_CONSUMER_SECRET']}'
-            keywords => [ "London", "Barcelona" ]
             oauth_token => '#{ENV['TWITTER_OAUTH_TOKEN']}'
             oauth_token_secret => '#{ENV['TWITTER_OAUTH_TOKEN_SECRET']}'
+            keywords => [ 'Barcelona' ]
             full_tweet => true
         }
       }
