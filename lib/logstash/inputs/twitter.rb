@@ -60,9 +60,14 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
   # A comma-separated list of longitude,latitude pairs specifying a set
   # of bounding boxes to filter Tweets by.
-  # See https://dev.twitter.com/streaming/overview/request-parameters#locations 
+  # See https://dev.twitter.com/streaming/overview/request-parameters#locations
   # for more details
   config :locations, :validate => :string
+
+  # Returns a small random sample of all public statuses. The Tweets returned
+  # by the default access level are the same, so if two different clients connect
+  # to this endpoint, they will see the same Tweets. Default => false
+  config :use_samples, :validate => :boolean, :default => false
 
   def register
     require "twitter"
@@ -105,25 +110,41 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   def run(queue)
     @logger.info("Starting twitter tracking", options)
     begin
-      @stream_client.filter(options) do |tweet|
-        return if stop?
-        if tweet.is_a?(Twitter::Tweet)
-          event = from_tweet(tweet)
-          decorate(event)
-          queue << event
+      if @use_samples
+        @stream_client.sample do |tweet|
+          return if stop?
+          tweet_processor(queue, tweet)
         end
-      end # client.filter
+
+      else
+        @stream_client.filter(options) do |tweet|
+          return if stop?
+          tweet_processor(queue, tweet)
+        end
+      end
     rescue Twitter::Error::TooManyRequests => e
-      puts("Twitter too many requests error, sleeping for #{e.rate_limit.reset_in}s")
+      @logger.warn("Twitter too many requests error, sleeping for #{e.rate_limit.reset_in}s")
       Stud.stoppable_sleep(e.rate_limit.reset_in) { stop? }
       retry
     rescue => e
-      puts("Twitter client error", :message => e.message, :exception => e, :backtrace => e.backtrace, :options => @filter_options)
+      @logger.warn("Twitter client error", :message => e.message, :exception => e, :backtrace => e.backtrace, :options => @filter_options)
       retry
     end
   end # def run
 
+  def stop
+    @stream_client = nil
+  end
+
   private
+
+  def tweet_processor(queue, tweet)
+    if tweet.is_a?(Twitter::Tweet)
+      event = from_tweet(tweet)
+      decorate(event)
+      queue << event
+    end
+  end
 
   def from_tweet(tweet)
     @logger.debug? && @logger.debug("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
