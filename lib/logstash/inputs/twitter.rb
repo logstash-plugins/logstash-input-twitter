@@ -47,18 +47,23 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   config :oauth_token_secret, :validate => :password, :required => true
 
   # Any keywords to track in the twitter stream
-  config :keywords, :validate => :array, :default => []
-
-  # Any follows to track in the twitter stream (follow id)
-  config :follows, :validate => :array, :default => []
-
-  # Any locations to track in the twitter stream
-  config :locations, :validate => :array, :default => []
+  config :keywords, :validate => :array
 
   # Record full tweet object as given to us by the Twitter stream api.
   config :full_tweet, :validate => :boolean, :default => false
 
-  public
+  # A comma separated list of user IDs, indicating the users to
+  # return statuses for in the stream.
+  # See https://dev.twitter.com/streaming/overview/request-parameters#follow
+  # for more details.
+  config :follows, :validate => :string
+
+  # A comma-separated list of longitude,latitude pairs specifying a set
+  # of bounding boxes to filter Tweets by.
+  # See https://dev.twitter.com/streaming/overview/request-parameters#locations 
+  # for more details
+  config :locations, :validate => :string
+
   def register
     require "twitter"
 
@@ -80,22 +85,27 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       end
     end
 
-    @client = Twitter::Streaming::Client.new do |c|
+    @rest_client = Twitter::REST::Client.new do |c|
       c.consumer_key = @consumer_key
       c.consumer_secret = @consumer_secret.value
       c.access_token = @oauth_token
       c.access_token_secret = @oauth_token_secret.value
     end
+
+    @stream_client = Twitter::Streaming::Client.new do |c|
+      c.consumer_key = @consumer_key
+      c.consumer_secret = @consumer_secret.value
+      c.access_token = @oauth_token
+      c.access_token_secret = @oauth_token_secret.value
+    end
+
+    @filter_options = build_options
   end
 
-  public
   def run(queue)
-    @logger.info("Starting twitter tracking", :keywords => @keywords,
-                                              :follow => @follows,
-                                              :location => @locations)
+    @logger.info("Starting twitter tracking", options)
     begin
-      @client.filter(:track => @keywords.join(","), :follow => @follows.join(","),
-                     :location => @locations.join(",")) do |tweet|
+      @stream_client.filter(options) do |tweet|
         return if stop?
         if tweet.is_a?(Twitter::Tweet)
           event = from_tweet(tweet)
@@ -104,16 +114,17 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
         end
       end # client.filter
     rescue Twitter::Error::TooManyRequests => e
-      @logger.warn("Twitter too many requests error, sleeping for #{e.rate_limit.reset_in}s")
+      puts("Twitter too many requests error, sleeping for #{e.rate_limit.reset_in}s")
       Stud.stoppable_sleep(e.rate_limit.reset_in) { stop? }
       retry
     rescue => e
-      @logger.warn("Twitter client error", :message => e.message, :exception => e, :backtrace => e.backtrace)
+      puts("Twitter client error", :message => e.message, :exception => e, :backtrace => e.backtrace, :options => @filter_options)
       retry
     end
   end # def run
 
   private
+
   def from_tweet(tweet)
     @logger.debug? && @logger.debug("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
     if @full_tweet
@@ -139,4 +150,25 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
     event
   end
+
+  def options
+    @filter_options ||= build_options
+  end
+
+  def build_options
+    options = {}
+    options[:track]     = @keywords.join(",") if @keywords && @keywords.length > 0
+    options[:locations] = @locations          if @locations && @location.length > 0
+    if @follows && @follows.length > 0
+      options[:follow]    = @follows.split(",").map do |username|
+        (  username.to_i == 0 ? find_userid(username) : username )
+      end.join(",")
+    end
+    options
+  end
+
+  def find_userid(username)
+    @rest_client.user(:user => username)
+  end
+
 end # class LogStash::Inputs::Twitter
