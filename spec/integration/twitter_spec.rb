@@ -62,13 +62,13 @@ describe LogStash::Inputs::Twitter do
         expect(event["hashtags"]).to be_truthy
       end
 
-       it "contains the symbols" do
+      it "contains the symbols" do
         expect(event["symbols"]).to be_truthy
       end
 
-       it "contains the user_mentions" do
-         expect(event["user_mentions"]).to be_truthy
-       end
+      it "contains the user_mentions" do
+        expect(event["user_mentions"]).to be_truthy
+      end
 
     end
   end
