@@ -65,7 +65,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     # monkey patch twitter gem to ignore json parsing error.
     # at the same time, use our own json parser
     # this has been tested with a specific gem version, raise if not the same
-    raise("Incompatible Twitter gem version and the LogStash::Json.load") unless Twitter::Version.to_s == "5.12.0"
+    raise("Incompatible Twitter gem version and the LogStash::Json.load") unless Twitter::Version.to_s == "5.14.0"
 
     Twitter::Streaming::Response.module_eval do
       def on_body(data)
