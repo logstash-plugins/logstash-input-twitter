@@ -56,13 +56,18 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # return statuses for in the stream.
   # See https://dev.twitter.com/streaming/overview/request-parameters#follow
   # for more details.
-  config :follows, :validate => :string
+  config :follows, :validate => :array
 
   # A comma-separated list of longitude,latitude pairs specifying a set
   # of bounding boxes to filter Tweets by.
   # See https://dev.twitter.com/streaming/overview/request-parameters#locations
   # for more details
   config :locations, :validate => :string
+
+  # A list of BCP 47 language identifiers corresponding to any of the languages listed
+  # on Twitter’s advanced search page will only return Tweets that have been detected 
+  # as being written in the specified languages
+  config :languages, :validate => :array
 
   # Returns a small random sample of all public statuses. The Tweets returned
   # by the default access level are the same, so if two different clients connect
@@ -178,8 +183,10 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
   def build_options
     options = {}
-    options[:track]     = @keywords.join(",") if @keywords && @keywords.length > 0
-    options[:locations] = @locations          if @locations && @location.length > 0
+    options[:track]     = @keywords.join(",")  if @keywords && @keywords.length > 0
+    options[:locations] = @locations           if @locations && @location.length > 0
+    options[:language]  = @languages.join(",") if @languages && @languages.length > 0
+
     if @follows && @follows.length > 0
       options[:follow]    = @follows.split(",").map do |username|
         (  username.to_i == 0 ? find_userid(username) : username )
