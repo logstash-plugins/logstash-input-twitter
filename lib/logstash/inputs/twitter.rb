@@ -95,20 +95,8 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       end
     end
 
-    @rest_client = Twitter::REST::Client.new do |c|
-      c.consumer_key = @consumer_key
-      c.consumer_secret = @consumer_secret.value
-      c.access_token = @oauth_token
-      c.access_token_secret = @oauth_token_secret.value
-    end
-
-    @stream_client = Twitter::Streaming::Client.new do |c|
-      c.consumer_key = @consumer_key
-      c.consumer_secret = @consumer_secret.value
-      c.access_token = @oauth_token
-      c.access_token_secret = @oauth_token_secret.value
-    end
-
+    @rest_client    = Twitter::REST::Client.new { |c|  configure(c) }
+    @stream_client  = Twitter::Streaming::Client.new { |c|  configure(c) }
     @filter_options = build_options
   end
 
@@ -175,6 +163,13 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     event["in-reply-to"] = nil if event["in-reply-to"].is_a?(Twitter::NullObject)
 
     event
+  end
+
+  def configure(c)
+    c.consumer_key = @consumer_key
+    c.consumer_secret = @consumer_secret.value
+    c.access_token = @oauth_token
+    c.access_token_secret = @oauth_token_secret.value
   end
 
   def options
