@@ -9,6 +9,8 @@ require "stud/interval"
 # Read events from the twitter streaming api.
 class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
+  attr_reader :filter_options
+
   config_name "twitter"
 
   # Your twitter app's consumer key
@@ -99,22 +101,21 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       end
     end
 
-    @rest_client    = Twitter::REST::Client.new      { |c|  configure(c) }
-    @stream_client  = Twitter::Streaming::Client.new { |c|  configure(c) }
-    @filter_options = build_options
+    @rest_client     = Twitter::REST::Client.new      { |c|  configure(c) }
+    @stream_client   = Twitter::Streaming::Client.new { |c|  configure(c) }
+    @twitter_options = build_options
   end
 
   def run(queue)
-    @logger.info("Starting twitter tracking", options)
+    @logger.info("Starting twitter tracking", twitter_options)
     begin
       if @use_samples
         @stream_client.sample do |tweet|
           return if stop?
           tweet_processor(queue, tweet)
         end
-
       else
-        @stream_client.filter(options) do |tweet|
+        @stream_client.filter(twitter_options) do |tweet|
           return if stop?
           tweet_processor(queue, tweet)
         end
@@ -131,6 +132,11 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
   def stop
     @stream_client = nil
+  end
+
+  def twitter_options
+    @twitter_options.delete(:level) # This is added by the logger when you pass the full hash as params
+    @twitter_options
   end
 
   private
@@ -183,22 +189,18 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     c.access_token_secret = @oauth_token_secret.value
   end
 
-  def options
-    @filter_options ||= build_options
-  end
-
   def build_options
-    options = {}
-    options[:track]     = @keywords.join(",")  if @keywords && @keywords.length > 0
-    options[:locations] = @locations           if @locations && @location.length > 0
-    options[:language]  = @languages.join(",") if @languages && @languages.length > 0
+    build_options = {}
+    build_options[:track]     = @keywords.join(",")  if @keywords && @keywords.length > 0
+    build_options[:locations] = @locations           if @locations && @locations.length > 0
+    build_options[:language]  = @languages.join(",") if @languages && @languages.length > 0
 
     if @follows && @follows.length > 0
-      options[:follow]    = @follows.split(",").map do |username|
+      build_options[:follow]    = @follows.map do |username|
         (  username.to_i == 0 ? find_userid(username) : username )
       end.join(",")
     end
-    options
+    build_options
   end
 
   def find_userid(username)
