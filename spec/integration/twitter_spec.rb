@@ -31,7 +31,7 @@ describe LogStash::Inputs::Twitter do
       end
     end
 
-    context "folling a user stream" do
+    context "pulling from sample" do
       let(:config) do
         <<-CONFIG
        input {
@@ -40,7 +40,7 @@ describe LogStash::Inputs::Twitter do
             consumer_secret => '#{ENV['TWITTER_CONSUMER_SECRET']}'
             oauth_token => '#{ENV['TWITTER_OAUTH_TOKEN']}'
             oauth_token_secret => '#{ENV['TWITTER_OAUTH_TOKEN_SECRET']}'
-            follows => '#{ENV['TWITTER_FOLLOW']}'
+            use_samples => true
         }
       }
         CONFIG
@@ -48,12 +48,12 @@ describe LogStash::Inputs::Twitter do
 
       let(:events) do
         input(config) do |pipeline, queue|
-          1.times.collect { queue.pop }
+          3.times.collect { queue.pop }
         end
       end
 
       it "receive a list of events from the twitter stream" do
-        expect(events.count).to eq(1)
+        expect(events.count).to eq(3)
       end
     end
 
