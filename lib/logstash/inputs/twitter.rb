@@ -76,6 +76,9 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # to this endpoint, they will see the same Tweets. Default => false
   config :use_samples, :validate => :boolean, :default => false
 
+  # Let's you ingore the retweeets comming out of the twitter api. Default => false
+  config :ignore_retweets, :validate => :boolean, :default => false
+
   def register
     require "twitter"
 
@@ -101,8 +104,8 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       end
     end
 
-    @rest_client     = Twitter::REST::Client.new      { |c|  configure(c) }
-    @stream_client   = Twitter::Streaming::Client.new { |c|  configure(c) }
+    @rest_client     = Twitter::REST::Client.new       { |c|  configure(c) }
+    @stream_client   = Twitter::Streaming::Client.new  { |c|  configure(c) }
     @twitter_options = build_options
   end
 
@@ -139,14 +142,23 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     @twitter_options
   end
 
+  def set_stream_client(client)
+    @stream_client = client
+  end
+
   private
 
   def tweet_processor(queue, tweet)
     if tweet.is_a?(Twitter::Tweet)
+      return if ignore?(tweet)
       event = from_tweet(tweet)
       decorate(event)
       queue << event
     end
+  end
+
+  def ignore?(tweet)
+    @ignore_retweets && tweet.retweet?
   end
 
   def from_tweet(tweet)
