@@ -209,7 +209,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
     if @follows && @follows.length > 0
       build_options[:follow]    = @follows.map do |username|
-        (  username.to_i == 0 ? find_userid(username) : username )
+        (  !is_number?(username) ? find_userid(username) : username )
       end.join(",")
     end
     build_options
@@ -219,4 +219,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     @rest_client.user(:user => username)
   end
 
+  def is_number?(string)
+    /^(\d+)$/.match(string) ? true : false
+  end
 end # class LogStash::Inputs::Twitter
