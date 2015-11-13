@@ -110,7 +110,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   end
 
   def run(queue)
-    @logger.info("Starting twitter tracking", twitter_options)
+    @logger.info("Starting twitter tracking", twitter_options.clone) # need to pass a clone as it modify this var otherwise
     begin
       if @use_samples
         @stream_client.sample do |tweet|
@@ -138,7 +138,6 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   end
 
   def twitter_options
-    @twitter_options.delete(:level) # This is added by the logger when you pass the full hash as params
     @twitter_options
   end
 
@@ -203,19 +202,19 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
   def build_options
     build_options = {}
-    build_options[:track]     = @keywords.join(",")  if @keywords && @keywords.length > 0
-    build_options[:locations] = @locations           if @locations && @locations.length > 0
-    build_options[:language]  = @languages.join(",") if @languages && @languages.length > 0
+    build_options[:track]     = @keywords.join(",")  if @keywords  && !@keywords.empty?
+    build_options[:locations] = @locations           if @locations && !@locations.empty?
+    build_options[:language]  = @languages.join(",") if @languages && !@languages.empty?
 
     if @follows && @follows.length > 0
       build_options[:follow]    = @follows.map do |username|
-        (  !is_number?(username) ? find_userid(username) : username )
+        (  !is_number?(username) ? find_user(username) : username )
       end.join(",")
     end
     build_options
   end
 
-  def find_userid(username)
+  def find_user(username)
     @rest_client.user(:user => username)
   end
 
