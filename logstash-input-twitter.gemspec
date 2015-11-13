@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
 
   # Gem dependencies
   s.add_runtime_dependency "logstash-core", ">= 2.0.0.beta2", "< 3.0.0"
-  s.add_runtime_dependency 'twitter', ['5.12.0']
+  s.add_runtime_dependency 'twitter', '5.14.0'
   s.add_runtime_dependency 'stud', '>= 0.0.22', '< 0.1'
 
   s.add_development_dependency 'logstash-devutils'
