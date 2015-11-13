@@ -6,29 +6,29 @@ require "logstash/util"
 require "logstash/json"
 require "stud/interval"
 
-# Read events from the twitter streaming api.
+# Ingest events from the Twitter Streaming API.
 class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
   attr_reader :filter_options
 
   config_name "twitter"
 
-  # Your twitter app's consumer key
+  # Your Twitter App's consumer key
   #
   # Don't know what this is? You need to create an "application"
-  # on twitter, see this url: <https://dev.twitter.com/apps/new>
+  # on Twitter, see this url: <https://dev.twitter.com/apps/new>
   config :consumer_key, :validate => :string, :required => true
 
-  # Your twitter app's consumer secret
+  # Your Twitter App's consumer secret
   #
   # If you don't have one of these, you can create one by
-  # registering a new application with twitter:
+  # registering a new application with Twitter:
   # <https://dev.twitter.com/apps/new>
   config :consumer_secret, :validate => :password, :required => true
 
   # Your oauth token.
   #
-  # To get this, login to twitter with whatever account you want,
+  # To get this, login to Twitter with whatever account you want,
   # then visit <https://dev.twitter.com/apps>
   #
   # Click on your app (used with the consumer_key and consumer_secret settings)
@@ -39,7 +39,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
   # Your oauth token secret.
   #
-  # To get this, login to twitter with whatever account you want,
+  # To get this, login to Twitter with whatever account you want,
   # then visit <https://dev.twitter.com/apps>
   #
   # Click on your app (used with the consumer_key and consumer_secret settings)
@@ -48,35 +48,44 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # application.
   config :oauth_token_secret, :validate => :password, :required => true
 
-  # Any keywords to track in the twitter stream
+  # Any keywords to track in the Twitter stream. For multiple keywords, use
+  # the syntax ["foo", "bar"]. There's a logical OR between each keyword 
+  # string listed and a logical AND between words separated by spaces per
+  # keyword string.
+  # See https://dev.twitter.com/streaming/overview/request-parameters#track 
+  # for more details.
+  #
+  # The wildcard "*" option is not supported. To ingest a sample stream of 
+  # all tweets, the use_samples option is recommended. 
   config :keywords, :validate => :array
 
-  # Record full tweet object as given to us by the Twitter stream api.
+  # Record full tweet object as given to us by the Twitter Streaming API.
   config :full_tweet, :validate => :boolean, :default => false
 
   # A comma separated list of user IDs, indicating the users to
-  # return statuses for in the stream.
+  # return statuses for in the Twitter stream.
   # See https://dev.twitter.com/streaming/overview/request-parameters#follow
   # for more details.
   config :follows, :validate => :array
 
-  # A comma-separated list of longitude,latitude pairs specifying a set
-  # of bounding boxes to filter Tweets by.
+  # A comma-separated list of longitude, latitude pairs specifying a set
+  # of bounding boxes to filter tweets by.
   # See https://dev.twitter.com/streaming/overview/request-parameters#locations
-  # for more details
+  # for more details.
   config :locations, :validate => :string
 
   # A list of BCP 47 language identifiers corresponding to any of the languages listed
-  # on Twitter’s advanced search page will only return Tweets that have been detected 
-  # as being written in the specified languages
+  # on Twitter’s advanced search page will only return tweets that have been detected 
+  # as being written in the specified languages.
   config :languages, :validate => :array
 
-  # Returns a small random sample of all public statuses. The Tweets returned
+  # Returns a small random sample of all public statuses. The tweets returned
   # by the default access level are the same, so if two different clients connect
-  # to this endpoint, they will see the same Tweets. Default => false
+  # to this endpoint, they will see the same tweets. If set to true, the keywords, 
+  # follows, locations, and languages options will be ignored. Default => false
   config :use_samples, :validate => :boolean, :default => false
 
-  # Let's you ingore the retweeets comming out of the twitter api. Default => false
+  # Lets you ingore the retweets coming out of the Twitter API. Default => false
   config :ignore_retweets, :validate => :boolean, :default => false
 
   def register
