@@ -1,3 +1,13 @@
+## 2.1.0
+  - Add an option to fetch data from the sample endpoint.
+  - Add hashtags, symbols and user_mentions as data for the non extended tweet event.
+  - Add an option to filter per location and language.
+  - Add an option to stream data from a list of users.
+  - Add integration and unit tests for this and previous features.
+  - Add an ignore_retweet flag to filter them.
+  - Small code reorg and refactoring.
+  - Fixes #22 #21 #20 #11 #9
+
 ## 2.0.0
  - Plugins were updated to follow the new shutdown semantic, this mainly allows Logstash to instruct input plugins to terminate gracefully, 
    instead of using Thread.raise on the plugins' threads. Ref: https://github.com/elastic/logstash/pull/3895
