@@ -216,8 +216,8 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
         proxy_address: @proxy_address,
         proxy_port: @proxy_port
       }
-      c.proxy[:proxy_username] = @proxy_username if @proxy_username
-      c.proxy[:proxy_password] = @proxy_password if @proxy_password
+      c.proxy[:proxy_username] = @proxy_username       if @proxy_username
+      c.proxy[:proxy_password] = @proxy_password.value if @proxy_password
     end
   end
 
