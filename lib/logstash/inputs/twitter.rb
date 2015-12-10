@@ -109,7 +109,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     end
 
     if @use_samples && @use_firehose
-      raise LogStash::ConfigurationError.new("Only use_firehose or use_samples can be choose")
+      raise LogStash::ConfigurationError.new("use_firehose and use_samples cannot both be true")
     end
 
     # monkey patch twitter gem to ignore json parsing error.
