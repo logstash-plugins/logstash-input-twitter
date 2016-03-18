@@ -1,3 +1,5 @@
+# 2.2.1
+  - New dependency requirements for logstash-core for the 5.0 release
 ## 2.2.0
   - Upgraded the twitter gem to the last version available, 5.15.0
   - Add proxy support, Fixes #7.
