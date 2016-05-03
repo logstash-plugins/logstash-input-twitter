@@ -188,14 +188,14 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       attributes["user_mentions"]  = tweet.user_mentions
 
       event = LogStash::Event.new(attributes)
-      event["in-reply-to"] = tweet.in_reply_to_status_id if tweet.reply?
+      event.set("in-reply-to", tweet.in_reply_to_status_id) if tweet.reply?
       unless tweet.urls.empty?
-        event["urls"] = tweet.urls.map(&:expanded_url).map(&:to_s)
+        event.set("urls", tweet.urls.map(&:expanded_url).map(&:to_s))
       end
     end
 
     # Work around bugs in JrJackson. The standard serializer won't work till we upgrade
-    event["in-reply-to"] = nil if event["in-reply-to"].is_a?(Twitter::NullObject)
+    event.set("in-reply-to", nil) if event.get("in-reply-to").is_a?(Twitter::NullObject)
 
     event
   end
