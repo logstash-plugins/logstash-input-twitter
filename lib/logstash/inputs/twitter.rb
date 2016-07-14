@@ -98,6 +98,12 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # Port where the proxy is listening, by default 3128 (squid)
   config :proxy_port, :validate => :number, :default => 3128
 
+  # Proxy username to be used when performing authentication
+  config :proxy_username, :validate => :string
+
+  # Proxy password to be used when authenticating
+  config :proxy_password, :validate => :password
+
   def register
     require "twitter"
 
@@ -208,8 +214,10 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     if @use_proxy
       c.proxy =  {
         proxy_address: @proxy_address,
-        proxy_port: @proxy_port,
+        proxy_port: @proxy_port
       }
+      c.proxy[:proxy_username] = @proxy_username       if @proxy_username
+      c.proxy[:proxy_password] = @proxy_password.value if @proxy_password
     end
   end
 
