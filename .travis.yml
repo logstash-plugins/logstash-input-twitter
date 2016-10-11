@@ -6,10 +6,6 @@ rvm:
 - jruby-1.7.25
 script:
 - bundle exec rspec spec --order rand
-- bundle exec rspec spec --order rand -t integration
 jdk: oraclejdk8
-before_install:
-- echo $HOME
-- echo "---------------"
-- echo $PUB_TWITTER_CONSUMER_KEY
-- echo "---------------"
+
+  
