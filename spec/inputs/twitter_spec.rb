@@ -38,7 +38,7 @@ describe LogStash::Inputs::Twitter do
 
   describe "when told to shutdown" do
     before(:each) do
-      allow(Twitter::Streaming::Client).to receive(:new).and_return(MockClient.new)
+      allow(Twitter::Streaming::Client).to receive(:new).and_return(LogstashTwitterInput::MockClient.new)
     end
     it_behaves_like "an interruptible input plugin"
   end
@@ -67,7 +67,7 @@ describe LogStash::Inputs::Twitter do
 
     it "uses the sample endpoint" do
       expect(stream_client).to receive(:sample).once
-      run_input_with(input, queue)
+      LogstashTwitterInput.run_input_with(input, queue)
     end
 
   end
@@ -133,7 +133,7 @@ describe LogStash::Inputs::Twitter do
 
       it "using the filter endpoint" do
         expect(stream_client).to receive(:filter).with(options).once
-        run_input_with(input, queue)
+        LogstashTwitterInput.run_input_with(input, queue)
       end
 
       context "when not filtering retweets" do
@@ -158,7 +158,7 @@ describe LogStash::Inputs::Twitter do
           expect(input).to receive(:from_tweet).with(tweet)
           expect(stream_client).to receive(:filter).at_least(:once).and_yield(tweet)
           expect(queue).to receive(:<<)
-          run_input_with(input, queue)
+          LogstashTwitterInput.run_input_with(input, queue)
         end
       end
 
@@ -183,7 +183,7 @@ describe LogStash::Inputs::Twitter do
           allow(tweet).to receive(:retweet?).and_return(true)
           expect(stream_client).to receive(:filter).at_least(:once).and_yield(tweet)
           expect(queue).not_to receive(:<<)
-          run_input_with(input, queue)
+          LogstashTwitterInput.run_input_with(input, queue)
         end
       end
 
