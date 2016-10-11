@@ -10,7 +10,7 @@ require "logstash/inputs/twitter/patches"
 # Ingest events from the Twitter Streaming API.
 class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
-  attr_reader :filter_options
+  attr_reader :filter_options, :event_generation_error_count
 
   config_name "twitter"
 
@@ -98,6 +98,11 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # Port where the proxy is listening, by default 3128 (squid)
   config :proxy_port, :validate => :number, :default => 3128
 
+  # Duration in seconds to wait before retrying a connection when twitter responds with a 429 TooManyRequests
+  # In some cases the 'x-rate-limit-reset' header is not set in the response and <error>.rate_limit.reset_in
+  # is nil. If this occurs then we use the integer specified here. The default is 5 minutes.
+  config :rate_limit_reset_in, :validate => :number, :default => 300
+
   def register
     require "twitter"
 
@@ -118,6 +123,11 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
   def run(queue)
     @logger.info("Starting twitter tracking", twitter_options.clone) # need to pass a clone as it modify this var otherwise
+
+    # keep track of the amount of non-specific errors rescued and logged - use in testing to verify no errors.
+    # this is because, as yet, we can't have rspec expectations on the logger instance.
+    @event_generation_error_count = 0
+
     begin
       if @use_samples
         @stream_client.sample do |tweet|
@@ -131,11 +141,13 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
         end
       end
     rescue Twitter::Error::TooManyRequests => e
-      @logger.warn("Twitter too many requests error, sleeping for #{e.rate_limit.reset_in}s")
-      Stud.stoppable_sleep(e.rate_limit.reset_in) { stop? }
+      sleep_for = e.rate_limit.reset_in || @rate_limit_reset_in # 5 minutes default value from config
+      @logger.warn("Twitter too many requests error, sleeping for #{sleep_for}s")
+      Stud.stoppable_sleep(sleep_for) { stop? }
       retry
     rescue => e
-      @logger.warn("Twitter client error", :message => e.message, :exception => e, :backtrace => e.backtrace, :options => @filter_options)
+      # if a lot of these errors begin to occur, the repeated retry will result in TooManyRequests errors trapped above.
+      @logger.warn("Twitter client error", :message => e.message, :exception => e.class.name, :backtrace => e.backtrace, :options => @filter_options)
       retry
     end
   end # def run
@@ -155,11 +167,15 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   private
 
   def tweet_processor(queue, tweet)
-    if tweet.is_a?(Twitter::Tweet)
-      return if ignore?(tweet)
-      event = from_tweet(tweet)
-      decorate(event)
-      queue << event
+    if tweet.is_a?(Twitter::Tweet) && !ignore?(tweet)
+      begin
+        event = from_tweet(tweet)
+        decorate(event)
+        queue << event
+      rescue => e
+        @event_generation_error_count = @event_generation_error_count.next
+        @logger.error("Event generation error", :message => e.message, :exception => e.class.name, :backtrace => e.backtrace.take(10))
+      end
     end
   end
 
@@ -183,19 +199,20 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
         "source" => "http://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}"
       }
 
-      attributes["hashtags"] = tweet.hashtags
-      attributes["symbols"]  = tweet.symbols
-      attributes["user_mentions"]  = tweet.user_mentions
-
+      attributes["hashtags"] = tweet.hashtags.map{|ht| ht.attrs}
+      attributes["symbols"]  = tweet.symbols.map{|sym| sym.attrs}
+      attributes["user_mentions"]  = tweet.user_mentions.map{|um| um.attrs}
       event = LogStash::Event.new(attributes)
-      event.set("in-reply-to", tweet.in_reply_to_status_id) if tweet.reply?
+      if tweet.reply? && !tweet.in_reply_to_status_id.nil?
+        event.set("in-reply-to", tweet.in_reply_to_status_id)
+      end
       unless tweet.urls.empty?
         event.set("urls", tweet.urls.map(&:expanded_url).map(&:to_s))
       end
     end
 
     # Work around bugs in JrJackson. The standard serializer won't work till we upgrade
-    event.set("in-reply-to", nil) if event.get("in-reply-to").is_a?(Twitter::NullObject)
+    # event.set("in-reply-to", nil) if event.get("in-reply-to").is_a?(Twitter::NullObject)
 
     event
   end
