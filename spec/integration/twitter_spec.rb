@@ -1,3 +1,5 @@
+__END__
+
 require_relative "../spec_helper"
 
 describe LogStash::Inputs::Twitter do
@@ -13,7 +15,7 @@ describe LogStash::Inputs::Twitter do
             consumer_secret => '#{ENV['TWITTER_CONSUMER_SECRET']}'
             oauth_token => '#{ENV['TWITTER_OAUTH_TOKEN']}'
             oauth_token_secret => '#{ENV['TWITTER_OAUTH_TOKEN_SECRET']}'
-            keywords => [ 'Barcelona' ]
+            keywords => [ 'Politics' ]
             full_tweet => true
         }
       }
