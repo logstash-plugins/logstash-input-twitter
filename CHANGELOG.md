@@ -1,3 +1,11 @@
+## 3.0.3
+  - Add protection for the (Java) Event when adding Twitter gem objects to the event in values,
+    fixes #40.
+  - add a specific rescue clause for any exceptions raised during event generation - these
+    should not be handled by the general rescue in the run method because this rescue assumes
+    a twitter gem upstream error and acts accordingly which is the wrong recovery action for an event generation failure
+  - refactor tests and add new integration test that publishes a tweet with known content.
+
 ## 3.0.2
   - Relax constraint on logstash-core-plugin-api to >= 1.60 <= 2.99
 
