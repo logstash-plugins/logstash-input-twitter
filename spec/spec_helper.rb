@@ -3,6 +3,17 @@ require 'logstash/inputs/twitter'
 require 'twitter'
 require 'rspec_sequencing'
 
+creds_file_path = File.expand_path('spec/integration_credentials.rb')
+if File.exist?(creds_file_path)
+  load creds_file_path
+  RSpec.configure do |config|
+    # enable integrations only when credentials are loaded
+    exclusions = config.exclusion_filter
+    exclusions.delete(:integration)
+    config.exclusion_filter = exclusions
+  end
+end
+
 module LogstashTwitterInput
   class MockClient
     def filter(options)

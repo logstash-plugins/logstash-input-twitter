@@ -1,10 +1,11 @@
 __END__
+# this test is quite unreliable - commenting it out
 
 require_relative "../spec_helper"
 
 describe LogStash::Inputs::Twitter do
 
-  describe "#receive", :integration => true do
+  describe "#receive [integration]", :integration => true do
 
     context "keyword search" do
       let(:config) do
@@ -15,7 +16,7 @@ describe LogStash::Inputs::Twitter do
             consumer_secret => '#{ENV['TWITTER_CONSUMER_SECRET']}'
             oauth_token => '#{ENV['TWITTER_OAUTH_TOKEN']}'
             oauth_token_secret => '#{ENV['TWITTER_OAUTH_TOKEN_SECRET']}'
-            keywords => [ 'Politics' ]
+            keywords => [ 'London', 'Politics', 'New York', 'Samsung', 'Apple' ]
             full_tweet => true
         }
       }

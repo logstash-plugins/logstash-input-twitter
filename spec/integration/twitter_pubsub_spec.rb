@@ -43,15 +43,20 @@ describe LogStash::Inputs::Twitter do
     context "partial tweet pub sub" do
       it "receives an event from the twitter stream" do
         RSpec::Sequencing.run_after(1, "update tweet status") do
-          twt = "logstash_ci_publish partial tweet test #{Time.now} #{SecureRandom.hex(6)} #lscipub @logstash https://www.elastic.co/downloads/logstash"
+          twt = "logstash_ci_publish partial tweet test #{Time.now} #{SecureRandom.hex(6)} $AAPL #lscipub @logstash https://www.elastic.co/downloads/logstash"
           publisher.update_with_media(twt, File.open(LogstashTwitterInput.fixture("small_smile.png")))
-        end.then_after(4, "stop plugin") do
+        end.then_after(3, "stop plugin") do
           plugin.stop
           true
         end.value
-        expect(queue.count).to eq(tweet_count)
+        expect(queue.size).to eq(tweet_count)
         expect(plugin.event_generation_error_count).to eq(0)
-        expect{queue.first.to_json}.not_to raise_error
+        event = queue.first
+        expect { event.to_json }.not_to raise_error
+        expect(event.get("hashtags").size).to be > 0
+        expect(event.get("symbols").size).to be > 0
+        expect(event.get("user_mentions").size).to be > 0
+        expect(event.get("urls").size).to be > 0
       end
     end
 
@@ -60,7 +65,7 @@ describe LogStash::Inputs::Twitter do
 
       it "receives an event from the twitter stream" do
         RSpec::Sequencing.run_after(0.1, "update tweet status") do
-          twt = "logstash_ci_publish full tweet test #{Time.now} #{SecureRandom.hex(6)} #lscipub @logstash https://www.elastic.co/downloads/logstash"
+          twt = "logstash_ci_publish full tweet test #{Time.now} #{SecureRandom.hex(6)} $AAPL #lscipub @logstash https://www.elastic.co/downloads/logstash"
           publisher.update_with_media(twt, File.open(LogstashTwitterInput.fixture("small_smile.png")))
         end.then_after(3, "stop plugin") do
           plugin.stop
@@ -68,7 +73,13 @@ describe LogStash::Inputs::Twitter do
         end.value
         expect(queue.count).to eq(tweet_count)
         expect(plugin.event_generation_error_count).to eq(0)
-        expect{queue.first.to_json}.not_to raise_error
+        event = queue.first
+        expect { LogStash::Json.dump(event.to_hash) }.not_to raise_error
+        expect(event.get("[entities][hashtags]").size).to be > 0
+        expect(event.get("[entities][symbols]").size).to be > 0
+        expect(event.get("[entities][user_mentions]").size).to be > 0
+        expect(event.get("[entities][urls]").size).to be > 0
+        expect(event.get("[extended_tweet][entities][media]").size).to be > 0
       end
     end
   end
