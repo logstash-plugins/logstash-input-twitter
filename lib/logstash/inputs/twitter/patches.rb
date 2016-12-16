@@ -27,8 +27,15 @@ module LogStash
             socket = ssl_stream(socket) if !request.using_proxy?
 
             request.stream(socket)
-            while body = socket.readpartial(1024) # rubocop:disable AssignmentInCondition
-              response << body
+
+            loop do
+              begin
+                incoming = socket.readpartial(4096)
+                break unless incoming
+                response << incoming
+              rescue EOFError
+                retry
+              end
             end
           end
 
