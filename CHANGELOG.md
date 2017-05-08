@@ -1,3 +1,6 @@
+## 3.0.4
+ - Pin version of http-form_data to 1.0.1 since 1.0.2 isn't compatible with Ruby 1.9
+
 ## 3.0.3
   - Add protection for the (Java) Event when adding Twitter gem objects to the event in values,
     fixes #40.
