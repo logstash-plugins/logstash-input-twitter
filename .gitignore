@@ -2,5 +2,4 @@
 Gemfile.lock
 .bundle
 vendor
-*.sh
 spec/integration_credentials.rb
