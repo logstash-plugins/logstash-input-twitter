@@ -102,7 +102,7 @@ Record full tweet object as given to us by the Twitter Streaming API.
   * Value type is <<boolean,boolean>>
   * Default value is `false`
 
-Lets you ingore the retweets coming out of the Twitter API. Default => false
+Lets you ignore the retweets coming out of the Twitter API. Default => false
 
 [id="plugins-{type}s-{plugin}-keywords"]
 ===== `keywords` 
