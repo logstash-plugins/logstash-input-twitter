@@ -1,3 +1,6 @@
+## 3.0.6
+  - Fix some documentation issues
+
 ## 3.0.4
  - Pin version of http-form_data to 1.0.1 since 1.0.2 isn't compatible with Ruby 1.9
 
