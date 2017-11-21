@@ -85,7 +85,7 @@ registering a new application with Twitter:
 
 A comma separated list of user IDs, indicating the users to
 return statuses for in the Twitter stream.
-See https://dev.twitter.com/streaming/overview/request-parameters#follow
+See https://developer.twitter.com/en/docs/tweets/filter-realtime/guides/basic-stream-parameters
 for more details.
 
 [id="plugins-{type}s-{plugin}-full_tweet"]
