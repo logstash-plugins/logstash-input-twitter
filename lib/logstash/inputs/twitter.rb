@@ -6,6 +6,7 @@ require "logstash/util"
 require "logstash/json"
 require "stud/interval"
 require "logstash/inputs/twitter/patches"
+require "uri"
 
 # Ingest events from the Twitter Streaming API.
 class LogStash::Inputs::Twitter < LogStash::Inputs::Base
@@ -50,14 +51,14 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   config :oauth_token_secret, :validate => :password, :required => true
 
   # Any keywords to track in the Twitter stream. For multiple keywords, use
-  # the syntax ["foo", "bar"]. There's a logical OR between each keyword 
+  # the syntax ["foo", "bar"]. There's a logical OR between each keyword
   # string listed and a logical AND between words separated by spaces per
   # keyword string.
-  # See https://dev.twitter.com/streaming/overview/request-parameters#track 
+  # See https://dev.twitter.com/streaming/overview/request-parameters#track
   # for more details.
   #
-  # The wildcard "*" option is not supported. To ingest a sample stream of 
-  # all tweets, the use_samples option is recommended. 
+  # The wildcard "*" option is not supported. To ingest a sample stream of
+  # all tweets, the use_samples option is recommended.
   config :keywords, :validate => :array
 
   # Record full tweet object as given to us by the Twitter Streaming API.
@@ -76,13 +77,13 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   config :locations, :validate => :string
 
   # A list of BCP 47 language identifiers corresponding to any of the languages listed
-  # on Twitter’s advanced search page will only return tweets that have been detected 
+  # on Twitter’s advanced search page will only return tweets that have been detected
   # as being written in the specified languages.
   config :languages, :validate => :array
 
   # Returns a small random sample of all public statuses. The tweets returned
   # by the default access level are the same, so if two different clients connect
-  # to this endpoint, they will see the same tweets. If set to true, the keywords, 
+  # to this endpoint, they will see the same tweets. If set to true, the keywords,
   # follows, locations, and languages options will be ignored. Default => false
   config :use_samples, :validate => :boolean, :default => false
 
@@ -98,10 +99,23 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # Port where the proxy is listening, by default 3128 (squid)
   config :proxy_port, :validate => :number, :default => 3128
 
+  # Username where the proxy is listening, by default 3128 (squid)
+  config :proxy_port, :validate => :number, :default => 3128
+
+  # Proxy user
+  config :proxy_user, :validate => :string
+
+  # Proxy user password
+  config :proxy_password, :validate => :password
+
   # Duration in seconds to wait before retrying a connection when twitter responds with a 429 TooManyRequests
   # In some cases the 'x-rate-limit-reset' header is not set in the response and <error>.rate_limit.reset_in
   # is nil. If this occurs then we use the integer specified here. The default is 5 minutes.
   config :rate_limit_reset_in, :validate => :number, :default => 300
+
+
+  # Duration in seconds to wait before retrying when Twitter client socket raises a EOF on network interruption
+  config :steam_eof_wait_duration, :validate => :number, :default => 30
 
   def register
     require "twitter"
@@ -144,6 +158,10 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       sleep_for = e.rate_limit.reset_in || @rate_limit_reset_in # 5 minutes default value from config
       @logger.warn("Twitter too many requests error, sleeping for #{sleep_for}s")
       Stud.stoppable_sleep(sleep_for) { stop? }
+      retry
+    rescue IOError => e
+      @logger.info("Twitter error: #{e.message}, retry in #{steam_eof_wait_duration}s")
+      Stud.stoppable_sleep(steam_eof_wait_duration) { stop? }
       retry
     rescue => e
       # if a lot of these errors begin to occur, the repeated retry will result in TooManyRequests errors trapped above.
@@ -211,9 +229,6 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       end
     end
 
-    # Work around bugs in JrJackson. The standard serializer won't work till we upgrade
-    # event.set("in-reply-to", nil) if event.get("in-reply-to").is_a?(Twitter::NullObject)
-
     event
   end
 
@@ -223,10 +238,15 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     c.access_token = @oauth_token
     c.access_token_secret = @oauth_token_secret.value
     if @use_proxy
-      c.proxy =  {
-        proxy_address: @proxy_address,
-        proxy_port: @proxy_port,
-      }
+      uri = URI.parse('')
+      uri.host = @proxy_address
+      uri.port = @proxy_port
+      proxy_hash = {:uri => uri}
+      if @proxy_user && @proxy_password
+        proxy_hash[:user] = @proxy_user
+        proxy_hash[:password] = @proxy_password
+      end
+      c.proxy = proxy_hash
     end
   end
 
