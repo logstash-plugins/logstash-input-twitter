@@ -245,7 +245,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   end
 
   def find_user(username)
-    @rest_client.user(:user => username)
+    @rest_client.user(:user => username).id.to_i
   end
 
   def is_number?(string)
