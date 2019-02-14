@@ -86,6 +86,9 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # follows, locations, and languages options will be ignored. Default => false
   config :use_samples, :validate => :boolean, :default => false
 
+  # Returns all tweet from firehose
+  config :use_firehose, :validate => :boolean, :default => false
+
   # Lets you ingore the retweets coming out of the Twitter API. Default => false
   config :ignore_retweets, :validate => :boolean, :default => false
 
@@ -106,8 +109,12 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   def register
     require "twitter"
 
-    if !@use_samples && ( @keywords.nil? && @follows.nil? && @locations.nil? )
+    if !@use_samples && !@use_firehose && ( @keywords.nil? && @follows.nil? && @locations.nil? )
       raise LogStash::ConfigurationError.new("At least one parameter (follows, locations or keywords) must be specified.")
+    end
+
+    if @use_samples && @use_firehose
+      raise LogStash::ConfigurationError.new("use_firehose and use_samples cannot both be true")
     end
 
     # monkey patch twitter gem to ignore json parsing error.
@@ -133,6 +140,11 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
         @stream_client.sample do |tweet|
           return if stop?
           tweet_processor(queue, tweet)
+        end
+      elsif @use_firehose
+          @stream_client.firehose do |tweet|
+            return if stop?
+            tweet_processor(queue, tweet)
         end
       else
         @stream_client.filter(twitter_options) do |tweet|
