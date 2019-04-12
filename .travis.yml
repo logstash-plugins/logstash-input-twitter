@@ -11,7 +11,6 @@ matrix:
   - env: SNAPSHOT=true ELASTIC_STACK_VERSION=7.x
   - env: ELASTIC_STACK_VERSION=7.x
   - env: ELASTIC_STACK_VERSION=6.x
-  - env: ELASTIC_STACK_VERSION=5.x
   fast_finish: true
 install: ci/unit/docker-setup.sh
 script: ci/unit/docker-run.sh
