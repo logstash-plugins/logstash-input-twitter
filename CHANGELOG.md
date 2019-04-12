@@ -1,3 +1,6 @@
+## 4.0.0
+  - Update http-form_data to ~> 2 and public_suffix to ~> 3
+
 ## 3.0.8
   - Docs: Set the default_codec doc attribute.
 
