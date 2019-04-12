@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
   s.add_runtime_dependency 'twitter', '5.15.0'
   s.add_runtime_dependency 'http-form_data', '~> 2'
-  s.add_runtime_dependency 'public_suffix', '~> 2'
+  s.add_runtime_dependency 'public_suffix', '~> 3'
   s.add_runtime_dependency 'stud', '>= 0.0.22', '< 0.1'
 
   s.add_development_dependency 'logstash-devutils'
