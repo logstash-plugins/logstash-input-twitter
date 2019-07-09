@@ -5,6 +5,7 @@ require "logstash/timestamp"
 require "logstash/util"
 require "logstash/json"
 require "stud/interval"
+require "twitter"
 require "logstash/inputs/twitter/patches"
 
 # Ingest events from the Twitter Streaming API.
@@ -104,8 +105,6 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   config :rate_limit_reset_in, :validate => :number, :default => 300
 
   def register
-    require "twitter"
-
     if !@use_samples && ( @keywords.nil? && @follows.nil? && @locations.nil? )
       raise LogStash::ConfigurationError.new("At least one parameter (follows, locations or keywords) must be specified.")
     end
