@@ -1,3 +1,6 @@
+## 4.0.1
+  - Updated Twitter gem to v6.2.0, cleaned up obsolete monkey patches, fixed integration tests [#63](https://github.com/logstash-plugins/logstash-input-twitter/pull/63)
+
 ## 4.0.0
   - Update http-form_data to ~> 2 and public_suffix to ~> 3
 
