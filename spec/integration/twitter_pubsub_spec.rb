@@ -45,7 +45,7 @@ describe LogStash::Inputs::Twitter do
         RSpec::Sequencing.run_after(1, "update tweet status") do
           twt = "logstash_ci_publish partial tweet test #{Time.now} #{SecureRandom.hex(6)} $AAPL #lscipub @logstash https://www.elastic.co/downloads/logstash"
           publisher.update_with_media(twt, File.open(LogstashTwitterInput.fixture("small_smile.png")))
-        end.then_after(3, "stop plugin") do
+        end.then_after(10, "stop plugin") do
           plugin.stop
           true
         end.value
@@ -64,10 +64,10 @@ describe LogStash::Inputs::Twitter do
       let(:full_tweets) { true }
 
       it "receives an event from the twitter stream" do
-        RSpec::Sequencing.run_after(0.1, "update tweet status") do
+        RSpec::Sequencing.run_after(1, "update tweet status") do
           twt = "logstash_ci_publish full tweet test #{Time.now} #{SecureRandom.hex(6)} $AAPL #lscipub @logstash https://www.elastic.co/downloads/logstash"
           publisher.update_with_media(twt, File.open(LogstashTwitterInput.fixture("small_smile.png")))
-        end.then_after(3, "stop plugin") do
+        end.then_after(10, "stop plugin") do
           plugin.stop
           true
         end.value
