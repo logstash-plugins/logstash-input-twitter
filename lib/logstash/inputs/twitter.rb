@@ -113,7 +113,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     end
 
     if @use_proxy
-      if (@proxy_protocol.downcase != "http") || (@proxy_protocol.downcase != "https")
+      if (@proxy_protocol.downcase != "http") && (@proxy_protocol.downcase != "https")
         raise LogStash::ConfigurationError.new("Proxy protocol must be set to either http or https.")
       end
     end
