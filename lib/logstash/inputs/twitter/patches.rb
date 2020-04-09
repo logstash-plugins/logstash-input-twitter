@@ -13,7 +13,7 @@ module LogStash
       private
 
       def self.verify_version
-        raise("Incompatible Twitter gem version and the LogStash::Json.load") unless ::Twitter::Version.to_s == "7.0.0"
+        raise("Incompatible Twitter gem version and the LogStash::Json.load") unless ::Twitter::Version.to_s == "6.2.0"
       end
 
       def self.patch_json
