@@ -234,7 +234,6 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       c.proxy =  {
         uri: @proxy_protocol+"://"+@proxy_address+":"+@proxy_port.to_s
       }
-      @logger.info("Setting proxy to: ", c.proxy)
     end
   end
 
