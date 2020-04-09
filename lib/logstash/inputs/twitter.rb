@@ -93,6 +93,9 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # When to use a proxy to handle the connections
   config :use_proxy, :validate => :boolean, :default => false
 
+  # Proxy protocol to use - http or https. Defaults to http
+  config :proxy_protocol, :validate => :string, :default => "http"
+
   # Location of the proxy, by default the same machine as the one running this LS instance
   config :proxy_address, :validate => :string, :default => "127.0.0.1"
 
@@ -107,6 +110,12 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   def register
     if !@use_samples && ( @keywords.nil? && @follows.nil? && @locations.nil? )
       raise LogStash::ConfigurationError.new("At least one parameter (follows, locations or keywords) must be specified.")
+    end
+
+    if @use_proxy
+      if (@proxy_protocol.downcase != "http") || (@proxy_protocol.downcase != "https")
+        raise LogStash::ConfigurationError.new("Proxy protocol must be set to either http or https.")
+      end
     end
 
     # monkey patch twitter gem to ignore json parsing error.
@@ -223,9 +232,9 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     c.access_token_secret = @oauth_token_secret.value
     if @use_proxy
       c.proxy =  {
-        proxy_address: @proxy_address,
-        proxy_port: @proxy_port,
+        uri: @proxy_protocol+"://"+@proxy_address+":"+@proxy_port.to_s
       }
+      @logger.info("Setting proxy to: ", c.proxy)
     end
   end
 

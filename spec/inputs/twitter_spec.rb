@@ -35,6 +35,19 @@ describe LogStash::Inputs::Twitter do
         expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
       end
     end
+
+    context "with unsupported proxy protocol" do
+      let(:config) do
+        {
+          'use_proxy' => true,
+          'proxy_protocol' => "SOCKS",
+        }
+      end
+
+      it "raise an error if unsupported proxy protocol specified" do
+        expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
+      end
+    end
   end
 
   describe "when told to shutdown" do
