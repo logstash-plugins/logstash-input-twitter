@@ -146,7 +146,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       retry
     rescue => e
       # if a lot of these errors begin to occur, the repeated retry will result in TooManyRequests errors trapped above.
-      @logger.warn("Twitter client error", :message => e.message, :exception => e.class.name, :backtrace => e.backtrace, :options => @filter_options)
+      @logger.warn("Twitter client error", :message => e.message, :exception => e.class, :backtrace => e.backtrace, :options => @filter_options)
       retry
     end
   end # def run
@@ -173,7 +173,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
         queue << event
       rescue => e
         @event_generation_error_count = @event_generation_error_count.next
-        @logger.error("Event generation error", :message => e.message, :exception => e.class.name, :backtrace => e.backtrace.take(10))
+        @logger.error("Event generation error", :message => e.message, :exception => e.class, :backtrace => e.backtrace)
       end
     end
   end
