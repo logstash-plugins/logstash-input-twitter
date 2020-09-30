@@ -216,16 +216,17 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     event
   end
 
-  def configure(c)
-    c.consumer_key = @consumer_key
-    c.consumer_secret = @consumer_secret.value
-    c.access_token = @oauth_token
-    c.access_token_secret = @oauth_token_secret.value
+  def configure(client)
+    client.consumer_key = @consumer_key
+    client.consumer_secret = @consumer_secret.value
+    client.access_token = @oauth_token
+    client.access_token_secret = @oauth_token_secret.value
     if @use_proxy
-      c.proxy =  {
-        proxy_address: @proxy_address,
-        proxy_port: @proxy_port,
-      }
+      if client.is_a?(Twitter::REST::Client)
+        client.proxy = { host: @proxy_address, port: @proxy_port }
+      else
+        client.proxy = { proxy_address: @proxy_address, proxy_port: @proxy_port }
+      end
     end
   end
 
