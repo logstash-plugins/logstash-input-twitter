@@ -236,15 +236,18 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     build_options[:language]  = @languages.join(",") if @languages && !@languages.empty?
 
     if @follows && @follows.length > 0
-      build_options[:follow]    = @follows.map do |username|
-        (  !is_number?(username) ? find_user(username) : username )
+      build_options[:follow] = @follows.map do |username|
+        is_number?(username) ? username : find_user_id(username).to_s
       end.join(",")
     end
     build_options
   end
 
-  def find_user(username)
-    @rest_client.user(:user => username)
+  # @return [Integer] user id
+  # @raise [Twitter::Error::NotFound]
+  def find_user_id(username)
+    @logger.debug? && @logger.debug("Looking up twitter user identifier for", :user => username)
+    @rest_client.user(:screen_name => username).id # Twitter::User#id
   end
 
   def is_number?(string)

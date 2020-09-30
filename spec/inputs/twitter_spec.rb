@@ -18,7 +18,7 @@ describe LogStash::Inputs::Twitter do
   describe "registration" do
 
     it "not raise error" do
-      expect {plugin.register}.to_not raise_error
+      expect { plugin.register }.to_not raise_error
     end
 
     context "with no required configuration fields" do
@@ -32,7 +32,30 @@ describe LogStash::Inputs::Twitter do
       end
 
       it "raise an error if no required fields are specified" do
-        expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
+        expect { plugin.register }.to raise_error(LogStash::ConfigurationError)
+      end
+    end
+
+    context "with follows" do
+
+      let(:user) { Twitter::User.new(id: 11111111) }
+
+      let(:config) do
+        {
+            'consumer_key' => 'foo',
+            'consumer_secret' => 'foo',
+            'oauth_token' => 'foo',
+            'oauth_token_secret' => 'foo',
+            'keywords' => ['bar'],
+            'follows' => ['12345678', 'theborg']
+        }
+      end
+
+      it "looks up user name" do
+        allow_any_instance_of(Twitter::REST::Client).
+            to receive(:user).with(screen_name: 'theborg').and_return user
+        plugin.register
+        expect(plugin.send(:build_options)).to include(follow: '12345678,11111111')
       end
     end
   end
