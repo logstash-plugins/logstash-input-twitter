@@ -1,3 +1,7 @@
+## 4.0.2
+
+  - Fix: user rest api call + proxy configuration [#68](https://github.com/logstash-plugins/logstash-input-twitter/pull/68)
+
 ## 4.0.1
   - Updated Twitter gem to v6.2.0, cleaned up obsolete monkey patches, fixed integration tests [#63](https://github.com/logstash-plugins/logstash-input-twitter/pull/63)
 

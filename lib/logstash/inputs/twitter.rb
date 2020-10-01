@@ -146,7 +146,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       retry
     rescue => e
       # if a lot of these errors begin to occur, the repeated retry will result in TooManyRequests errors trapped above.
-      @logger.warn("Twitter client error", :message => e.message, :exception => e.class.name, :backtrace => e.backtrace, :options => @filter_options)
+      @logger.warn("Twitter client error", :message => e.message, :exception => e.class, :backtrace => e.backtrace, :options => @filter_options)
       retry
     end
   end # def run
@@ -173,7 +173,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
         queue << event
       rescue => e
         @event_generation_error_count = @event_generation_error_count.next
-        @logger.error("Event generation error", :message => e.message, :exception => e.class.name, :backtrace => e.backtrace.take(10))
+        @logger.error("Event generation error", :message => e.message, :exception => e.class, :backtrace => e.backtrace)
       end
     end
   end
@@ -216,16 +216,17 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     event
   end
 
-  def configure(c)
-    c.consumer_key = @consumer_key
-    c.consumer_secret = @consumer_secret.value
-    c.access_token = @oauth_token
-    c.access_token_secret = @oauth_token_secret.value
+  def configure(client)
+    client.consumer_key = @consumer_key
+    client.consumer_secret = @consumer_secret.value
+    client.access_token = @oauth_token
+    client.access_token_secret = @oauth_token_secret.value
     if @use_proxy
-      c.proxy =  {
-        proxy_address: @proxy_address,
-        proxy_port: @proxy_port,
-      }
+      if client.is_a?(Twitter::REST::Client)
+        client.proxy = { host: @proxy_address, port: @proxy_port }
+      else
+        client.proxy = { proxy_address: @proxy_address, proxy_port: @proxy_port }
+      end
     end
   end
 
@@ -236,15 +237,18 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     build_options[:language]  = @languages.join(",") if @languages && !@languages.empty?
 
     if @follows && @follows.length > 0
-      build_options[:follow]    = @follows.map do |username|
-        (  !is_number?(username) ? find_user(username) : username )
+      build_options[:follow] = @follows.map do |username|
+        is_number?(username) ? username : find_user_id(username).to_s
       end.join(",")
     end
     build_options
   end
 
-  def find_user(username)
-    @rest_client.user(:user => username)
+  # @return [Integer] user id
+  # @raise [Twitter::Error::NotFound]
+  def find_user_id(username)
+    @logger.debug? && @logger.debug("Looking up twitter user identifier for", :user => username)
+    @rest_client.user(:screen_name => username).id # Twitter::User#id
   end
 
   def is_number?(string)
