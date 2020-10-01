@@ -26,8 +26,7 @@ module LogstashTwitterInput
     t = Thread.new(input, queue) do |_input, _queue|
       _input.run(_queue)
     end
-    sleep 0.1
-    t.kill
+    t.kill unless t.join(1.5) # due CI
   end
 
   def self.fixture_path
