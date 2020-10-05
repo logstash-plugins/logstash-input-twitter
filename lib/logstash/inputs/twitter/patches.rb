@@ -8,6 +8,7 @@ module LogStash
       def self.patch
         verify_version
         patch_json
+        patch_http_request
       end
 
       private
@@ -27,6 +28,21 @@ module LogStash
                 # silently ignore json parsing errors
               end
             end
+          end
+        end
+      end
+
+      def self.patch_http_request
+        ::HTTP::Request.class_eval do
+          def headline
+            request_uri =
+                if using_proxy? #&& !uri.https?
+                  uri.omit(:fragment)
+                else
+                  uri.request_uri
+                end
+
+            "#{verb.to_s.upcase} #{request_uri} HTTP/#{version}"
           end
         end
       end
