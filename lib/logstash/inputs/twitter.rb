@@ -128,17 +128,7 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     @event_generation_error_count = 0
 
     begin
-      if @use_samples
-        @stream_client.sample do |tweet|
-          return if stop?
-          tweet_processor(queue, tweet)
-        end
-      else
-        @stream_client.filter(twitter_options) do |tweet|
-          return if stop?
-          tweet_processor(queue, tweet)
-        end
-      end
+      do_run(queue)
     rescue Twitter::Error::TooManyRequests => e
       sleep_for = e.rate_limit.reset_in || @rate_limit_reset_in # 5 minutes default value from config
       @logger.warn("Twitter too many requests error, sleeping for #{sleep_for}s")
@@ -150,6 +140,21 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
       retry
     end
   end # def run
+
+  def do_run(queue)
+    if @use_samples
+      @stream_client.sample do |tweet|
+        return if stop?
+        tweet_processor(queue, tweet)
+      end
+    else
+      @stream_client.filter(twitter_options) do |tweet|
+        return if stop?
+        tweet_processor(queue, tweet)
+      end
+    end
+  end
+  private :do_run
 
   def stop
     @stream_client = nil
