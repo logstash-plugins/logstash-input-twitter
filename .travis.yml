@@ -7,7 +7,7 @@ before_install:
   - netstat -plunt | grep 3128
   - sudo cp -f .ci/squid.conf /etc/squid/squid.conf
   - sudo service squid restart
-  - netstat -plunt | grep 3128
+  - sudo netstat -plunt
 
 env:
   jobs:
