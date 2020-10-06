@@ -1,3 +1,6 @@
+## 4.0.3
+ - Fix: broken proxy configuration [#69](https://github.com/logstash-plugins/logstash-input-twitter/pull/69)
+
 ## 4.0.2
 
   - Fix: user rest api call + proxy configuration [#68](https://github.com/logstash-plugins/logstash-input-twitter/pull/68)
