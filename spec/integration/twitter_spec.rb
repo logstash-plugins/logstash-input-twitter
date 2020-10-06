@@ -5,6 +5,16 @@ require_relative "../spec_helper"
 
 describe LogStash::Inputs::Twitter do
 
+  let(:events) do
+    input(config) do |_, queue|
+      event_count.times.collect { queue.pop }
+    end
+  end
+
+  let(:event_count) { 3 }
+
+  let(:event) { events.first }
+
   describe "#receive [integration]", :integration => true do
 
     context "keyword search" do
@@ -21,12 +31,6 @@ describe LogStash::Inputs::Twitter do
         }
       }
         CONFIG
-      end
-
-      let(:events) do
-        input(config) do |pipeline, queue|
-          3.times.collect { queue.pop }
-        end
       end
 
       it "receive a list of events from the twitter stream" do
@@ -49,28 +53,14 @@ describe LogStash::Inputs::Twitter do
         CONFIG
       end
 
-      let(:events) do
-        input(config) do |pipeline, queue|
-          3.times.collect { queue.pop }
-        end
-      end
-
-      let(:event) { events.first }
-
       it "receive a list of events from the twitter stream" do
         expect(events.count).to eq(3)
-      end
 
-      it "contains the hashtags" do
-        expect(event["hashtags"]).to be_truthy
-      end
+        event.tap { |event| puts "sample event: #{event.to_hash}" } if $VERBOSE
 
-      it "contains the symbols" do
-        expect(event["symbols"]).to be_truthy
-      end
-
-      it "contains the user_mentions" do
-        expect(event["user_mentions"]).to be_truthy
+        expect(event.get("hashtags")).to be_truthy
+        expect(event.get("symbols")).to be_truthy
+        expect(event.get("user_mentions")).to be_truthy
       end
 
     end
@@ -88,20 +78,15 @@ describe LogStash::Inputs::Twitter do
             full_tweet => true
             use_proxy => true
             proxy_address => '127.0.0.1'
-            proxy_port => 8123
+            proxy_port => 3128
         }
       }
         CONFIG
       end
 
-      let(:events) do
-        input(config) do |pipeline, queue|
-          3.times.collect { queue.pop }
-        end
-      end
-
       it "receive a list of events from the twitter stream" do
         expect(events.count).to eq(3)
+        event.tap { |event| puts "sample event (using proxy): #{event.to_hash}" } if $VERBOSE
       end
     end
   end

@@ -15,6 +15,8 @@ describe LogStash::Inputs::Twitter do
 
   let(:plugin) { LogStash::Inputs::Twitter.new(config) }
 
+  let(:queue) { Queue.new }
+
   describe "registration" do
 
     it "not raise error" do
@@ -70,7 +72,6 @@ describe LogStash::Inputs::Twitter do
   describe "fetching from sample" do
 
     let(:input) { LogStash::Inputs::Twitter.new(config) }
-    let(:queue) { Queue.new }
 
     let(:config) do
       {
@@ -142,8 +143,6 @@ describe LogStash::Inputs::Twitter do
 
       let(:input) { LogStash::Inputs::Twitter.new(config) }
 
-      let(:queue) { Queue.new }
-
       let(:stream_client)       { double("stream-client") }
 
       let(:options) do
@@ -211,6 +210,30 @@ describe LogStash::Inputs::Twitter do
         end
       end
 
+    end
+
+    describe "proxy" do
+
+      before(:each) do
+        plugin.register
+      end
+
+      let(:config) do
+        super.merge( 'use_proxy' => true, 'proxy_address' => '127.0.0.1', 'proxy_port' => 12345 )
+      end
+
+      let(:proxy_socket) { double('proxy-socket') }
+
+      it "sends full URI requests" do
+        allow_any_instance_of(Twitter::Streaming::Connection).
+            to receive(:new_tcp_socket).with('127.0.0.1', 12345).and_return(proxy_socket)
+        header_line = 'POST https://stream.twitter.com/1.1/statuses/filter.json?track=foo%2Cbar HTTP/1.1'
+        expect(proxy_socket).to receive(:write).with(/^#{Regexp.escape(header_line)}/).
+            and_return(3000) # let the stack assume all content sent was consumed
+        # NOTE: this is just bogus - we're really just testing the HTTP header line ...
+        expect(proxy_socket).to receive(:readpartial).and_return nil
+        plugin.send(:do_run, queue)
+      end
     end
   end
 end
