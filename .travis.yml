@@ -11,4 +11,4 @@ before_install:
 
 env:
   jobs:
-    - SPEC_OPTS="--tag integration" ELASTIC_STACK_VERSION=7.x
+    - SPEC_OPTS="--tag integration" LOGGER_LEVEL="logstash.inputs.twitter=debug" ELASTIC_STACK_VERSION=7.x
