@@ -8,8 +8,13 @@ import:
   - logstash-plugins/.ci:travis/matrix.yml@1.x
   - logstash-plugins/.ci:travis/exec.yml@1.x
 
+addons:
+  apt:
+    packages:
+      - squid
+
 before_install:
-  - sudo apt install -y squid
+  #- sudo apt install -y squid
   - netstat -plunt | grep 3128
   - sudo cp -f .ci/squid.conf /etc/squid/squid.conf
   - sudo service squid restart
