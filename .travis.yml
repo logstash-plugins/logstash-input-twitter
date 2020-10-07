@@ -1,8 +1,12 @@
 dist: focal # 20.04 LTS
+language: minimal
 
 import:
-  - source: logstash-plugins/.ci:travis/travis.yml@1.x
-    mode: deep_merge_append
+  # NOTE: can not be used with dist: focal due docker-ce addon
+  #- source: logstash-plugins/.ci:travis/travis.yml@1.x
+  #  mode: deep_merge_append
+  - logstash-plugins/.ci:travis/matrix.yml@1.x
+  - logstash-plugins/.ci:travis/exec.yml@1.x
 
 before_install:
   - sudo apt install -y squid
