@@ -14,13 +14,8 @@ addons:
       - squid
 
 before_install:
-  #- sudo apt install -y squid
   - netstat -plunt | grep 3128
-  #- sudo cp -f .ci/squid.conf /etc/squid/squid.conf
-  #- sudo service squid restart
-  #- sudo netstat -plunt
-  #- curl "https://devdocs.io" --proxy http://127.0.0.1:3128
 
 env:
   jobs:
-    - SPEC_OPTS="--tag integration" LOGGER_LEVEL="logstash.inputs.twitter=debug" ELASTIC_STACK_VERSION=7.x
+    - SPEC_OPTS="--tag integration" ELASTIC_STACK_VERSION=7.x
