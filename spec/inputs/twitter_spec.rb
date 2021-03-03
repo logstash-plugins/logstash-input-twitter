@@ -219,7 +219,7 @@ describe LogStash::Inputs::Twitter do
       end
 
       let(:config) do
-        super.merge( 'use_proxy' => true, 'proxy_address' => '127.0.0.1', 'proxy_port' => 12345 )
+        super().merge( 'use_proxy' => true, 'proxy_address' => '127.0.0.1', 'proxy_port' => 12345 )
       end
 
       let(:proxy_socket) { double('proxy-socket') }
