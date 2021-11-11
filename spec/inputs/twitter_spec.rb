@@ -134,6 +134,19 @@ describe LogStash::Inputs::Twitter do
         expect(@event.timestamp.to_s).to eql '2021-11-11T10:00:00.000Z'
       end
     end
+
+    context 'with target' do
+      let(:config) { super().merge 'target' => '[twitter]' }
+
+      it "generated an event" do
+        expect(@event.include?('message')).to be false
+        expect(@event.include?('user')).to be false
+
+        expect(@event.get('[twitter][message]')).to eql "Hello World! 🥰"
+        expect(@event.get('[twitter][user]')).to eql "foo001"
+        expect(@event.timestamp.to_s).to eql '2021-11-11T10:00:00.000Z'
+      end
+    end
   end
 
   describe "stream filter" do

@@ -113,6 +113,11 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
   # is nil. If this occurs then we use the integer specified here. The default is 5 minutes.
   config :rate_limit_reset_in, :validate => :number, :default => 300
 
+  # Defines a target field for placing fields.
+  # If this setting is omitted, data gets stored at the root (top level) of the event.
+  # The target is only relevant while decoding data into a new event.
+  config :target, :validate => :field_reference
+
   def register
     if !@use_samples && ( @keywords.nil? && @follows.nil? && @locations.nil? )
       raise LogStash::ConfigurationError.new("At least one parameter (follows, locations or keywords) must be specified.")
@@ -220,12 +225,13 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
         attributes["urls"] = tweet.urls.map(&:expanded_url).map(&:to_s)
       end
     end
-    attributes[LogStash::Event::TIMESTAMP] = LogStash::Timestamp.new(tweet.created_at)
 
     # Work around bugs in JrJackson. The standard serializer won't work till we upgrade
     # event.set("in-reply-to", nil) if event.get("in-reply-to").is_a?(Twitter::NullObject)
 
-    event_factory.new_event(attributes)
+    event = targeted_event_factory.new_event(attributes)
+    event.timestamp = LogStash::Timestamp.new(tweet.created_at)
+    event
   end
 
   def configure(client)
