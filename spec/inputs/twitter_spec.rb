@@ -122,7 +122,7 @@ describe LogStash::Inputs::Twitter do
     it "generated an event" do
       expect(@event.get('message')).to eql "Hello World! 🥰"
       expect(@event.get('user')).to eql "foo001"
-      expect(@event.timestamp.to_s).to eql '2021-11-11T10:00:00.000Z'
+      expect(@event.timestamp.to_s).to match /2021-11-11T10:00:00(.000)?Z/
     end
 
     context 'with full_tweet' do
@@ -131,7 +131,7 @@ describe LogStash::Inputs::Twitter do
       it "generated an event" do
         expect(@event.get('text')).to eql "Hello World! 🥰"
         expect(@event.get('user')['screen_name']).to eql "foo001"
-        expect(@event.timestamp.to_s).to eql '2021-11-11T10:00:00.000Z'
+        expect(@event.timestamp.to_s).to match /2021-11-11T10:00:00(.000)?Z/
       end
     end
 
@@ -144,7 +144,7 @@ describe LogStash::Inputs::Twitter do
 
         expect(@event.get('[twitter][message]')).to eql "Hello World! 🥰"
         expect(@event.get('[twitter][user]')).to eql "foo001"
-        expect(@event.timestamp.to_s).to eql '2021-11-11T10:00:00.000Z'
+        expect(@event.timestamp.to_s).to match /2021-11-11T10:00:00(.000)?Z/
       end
     end
   end
