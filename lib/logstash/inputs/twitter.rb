@@ -7,9 +7,18 @@ require "logstash/json"
 require "stud/interval"
 require "twitter"
 require "logstash/inputs/twitter/patches"
+require 'logstash/plugin_mixins/ecs_compatibility_support'
+require 'logstash/plugin_mixins/ecs_compatibility_support/target_check'
+require 'logstash/plugin_mixins/event_support/event_factory_adapter'
+require 'logstash/plugin_mixins/validator_support/field_reference_validation_adapter'
 
 # Ingest events from the Twitter Streaming API.
 class LogStash::Inputs::Twitter < LogStash::Inputs::Base
+
+  include LogStash::PluginMixins::ECSCompatibilitySupport(:disabled, :v1, :v8 => :v1)
+  include LogStash::PluginMixins::EventSupport::EventFactoryAdapter
+
+  extend LogStash::PluginMixins::ValidatorSupport::FieldReferenceValidationAdapter
 
   attr_reader :filter_options, :event_generation_error_count
 
@@ -189,36 +198,34 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
 
   def from_tweet(tweet)
     @logger.debug? && @logger.debug("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
-    if @full_tweet
-      event = LogStash::Event.new(LogStash::Util.stringify_symbols(tweet.to_hash))
-      event.timestamp = LogStash::Timestamp.new(tweet.created_at)
-    else
 
+    if @full_tweet
+      attributes = LogStash::Util.stringify_symbols(tweet.to_hash)
+    else
       attributes = {
-        LogStash::Event::TIMESTAMP => LogStash::Timestamp.new(tweet.created_at),
         "message" => tweet.full_text,
         "user" => tweet.user.screen_name,
         "client" => tweet.source,
         "retweeted" => tweet.retweeted?,
-        "source" => "http://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}"
+        "source" => "http://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}",
+        "hashtags" => tweet.hashtags.map(&:attrs),
+        "symbols" => tweet.symbols.map(&:attrs),
+        "user_mentions" => tweet.user_mentions.map(&:attrs),
       }
 
-      attributes["hashtags"] = tweet.hashtags.map{|ht| ht.attrs}
-      attributes["symbols"]  = tweet.symbols.map{|sym| sym.attrs}
-      attributes["user_mentions"]  = tweet.user_mentions.map{|um| um.attrs}
-      event = LogStash::Event.new(attributes)
       if tweet.reply? && !tweet.in_reply_to_status_id.nil?
-        event.set("in-reply-to", tweet.in_reply_to_status_id)
+        attributes["in-reply-to"] = tweet.in_reply_to_status_id
       end
       unless tweet.urls.empty?
-        event.set("urls", tweet.urls.map(&:expanded_url).map(&:to_s))
+        attributes["urls"] = tweet.urls.map(&:expanded_url).map(&:to_s)
       end
     end
+    attributes[LogStash::Event::TIMESTAMP] = LogStash::Timestamp.new(tweet.created_at)
 
     # Work around bugs in JrJackson. The standard serializer won't work till we upgrade
     # event.set("in-reply-to", nil) if event.get("in-reply-to").is_a?(Twitter::NullObject)
 
-    event
+    event_factory.new_event(attributes)
   end
 
   def configure(client)
