@@ -1,3 +1,6 @@
+## 4.1.0
+ - Feat: optional target + ecs_compatibility [#72](https://github.com/logstash-plugins/logstash-input-twitter/pull/72)
+
 ## 4.0.3
  - Fix: broken proxy configuration [#69](https://github.com/logstash-plugins/logstash-input-twitter/pull/69)
 
