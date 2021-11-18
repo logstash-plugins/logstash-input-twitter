@@ -97,6 +97,58 @@ describe LogStash::Inputs::Twitter do
 
   end
 
+  let(:tweet) do
+    Twitter::Tweet.new(id: 1234567890123456789,
+                       id_str: '1234567890123456789',
+                       created_at: 'Thu Nov 11 10:00:00 +0000 2021',
+                       text: 'Hello World! 🥰',
+                       source: "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+                       truncated: false,
+                       user: {
+                           id: 1182909005012345600,
+                           name: "Foo Bar",
+                           screen_name: "foo001",
+                           location: nil,
+                       })
+  end
+
+  describe "from tweet" do
+
+    before(:each) do
+      plugin.register
+      @event = plugin.send :from_tweet, tweet
+    end
+
+    it "generated an event" do
+      expect(@event.get('message')).to eql "Hello World! 🥰"
+      expect(@event.get('user')).to eql "foo001"
+      expect(@event.timestamp.to_s).to match /2021-11-11T10:00:00(.000)?Z/
+    end
+
+    context 'with full_tweet' do
+      let(:config) { super().merge 'full_tweet' => true }
+
+      it "generated an event" do
+        expect(@event.get('text')).to eql "Hello World! 🥰"
+        expect(@event.get('user')['screen_name']).to eql "foo001"
+        expect(@event.timestamp.to_s).to match /2021-11-11T10:00:00(.000)?Z/
+      end
+    end
+
+    context 'with target' do
+      let(:config) { super().merge 'target' => '[twitter]' }
+
+      it "generated an event" do
+        expect(@event.include?('message')).to be false
+        expect(@event.include?('user')).to be false
+
+        expect(@event.get('[twitter][message]')).to eql "Hello World! 🥰"
+        expect(@event.get('[twitter][user]')).to eql "foo001"
+        expect(@event.timestamp.to_s).to match /2021-11-11T10:00:00(.000)?Z/
+      end
+    end
+  end
+
   describe "stream filter" do
 
     describe "options parsing" do
@@ -161,8 +213,6 @@ describe LogStash::Inputs::Twitter do
 
       context "when not filtering retweets" do
 
-        let(:tweet) { Twitter::Tweet.new(id: 1) }
-
         let(:config) do
           {
             'consumer_key' => 'foo',
@@ -186,8 +236,6 @@ describe LogStash::Inputs::Twitter do
       end
 
       context "when filtering retweets" do
-
-        let(:tweet) { Twitter::Tweet.new(id: 1) }
 
         let(:config) do
           {
