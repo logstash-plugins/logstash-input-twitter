@@ -126,7 +126,7 @@ registering a new application with Twitter:
   * Value type is <<string,string>>
   * Supported values are:
     ** `disabled`: does not use ECS-compatible field names (fields might be set at the root of the event)
-    ** `v1`, `v8`: avoids field names that might conflict with Elastic Common Schema (for example, JMS specific properties)
+    ** `v1`, `v8`: avoids field names that might conflict with Elastic Common Schema (for example, Twitter specific properties)
   * Default value depends on which version of Logstash is running:
     ** When Logstash provides a `pipeline.ecs_compatibility` setting, its value is used as the default
     ** Otherwise, the default value is `disabled`.
