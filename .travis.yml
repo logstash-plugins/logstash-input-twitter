@@ -1,2 +1,21 @@
+dist: focal # 20.04 LTS
+language: minimal
+
 import:
-- logstash-plugins/.ci:travis/travis.yml@1.x
+  # NOTE: can not be used with dist: focal due docker-ce addon
+  #- source: logstash-plugins/.ci:travis/travis.yml@1.x
+  #  mode: deep_merge_append
+  - logstash-plugins/.ci:travis/matrix.yml@1.x
+  - logstash-plugins/.ci:travis/exec.yml@1.x
+
+addons:
+  apt:
+    packages:
+      - squid
+
+before_install:
+  - netstat -plunt | grep 3128
+
+env:
+  jobs:
+    - SPEC_OPTS="--tag integration" ELASTIC_STACK_VERSION=7.x

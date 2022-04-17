@@ -1,9 +1,18 @@
+__END__
 require_relative "../spec_helper"
-
-Thread.abort_on_exception = true
 
 describe LogStash::Inputs::Twitter do
   describe "full integration", :integration => true do
+
+    before(:all) do
+      @_abort_on_exception = Thread.abort_on_exception
+      Thread.abort_on_exception = true
+    end
+
+    after(:all) do
+      Thread.abort_on_exception = @_abort_on_exception
+    end
+
     let(:pub_config) do
       {
         :consumer_key => ENV['PUB_TWITTER_CONSUMER_KEY'],

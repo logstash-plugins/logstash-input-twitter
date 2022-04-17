@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  logstash:
+    network_mode: host
+    environment:
+      - TWITTER_CONSUMER_KEY
+      - TWITTER_CONSUMER_SECRET
+      - TWITTER_OAUTH_TOKEN
+      - TWITTER_OAUTH_TOKEN_SECRET
+      - SPEC_OPTS
+      - LOGGER_LEVEL
