@@ -18,18 +18,12 @@ Gem::Specification.new do |s|
   # Special flag to let us know this is actually a logstash plugin
   s.metadata = { "logstash_plugin" => "true", "logstash_group" => "input" }
 
-  # public_suffix 3.x+ includes ruby syntax from 2.1
-  # This effectively requires Logstash >= 6.x
-  s.required_ruby_version = '>= 2.1.0'
-
   # Gem dependencies
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
   s.add_runtime_dependency 'logstash-mixin-ecs_compatibility_support', '~> 1.3'
   s.add_runtime_dependency "logstash-mixin-event_support", '~> 1.0'
   s.add_runtime_dependency 'logstash-mixin-validator_support', '~> 1.0'
-  s.add_runtime_dependency 'twitter', '6.2.0'
-  s.add_runtime_dependency 'http-form_data', '~> 2'
-  s.add_runtime_dependency 'public_suffix', '~> 3'
+  s.add_runtime_dependency 'twitter', '~> 8'
   s.add_runtime_dependency 'stud', '>= 0.0.22', '< 0.1'
 
   s.add_development_dependency 'logstash-devutils'
