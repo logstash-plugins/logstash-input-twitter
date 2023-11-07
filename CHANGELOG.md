@@ -1,5 +1,5 @@
 ## 4.1.1
- - Bumped `public_suffix` gem version to `> 4` `< 6` [#TBD](https://github.com/logstash-plugins/logstash-input-twitter/pull/TBD)
+ - Bumped `public_suffix` gem version to `> 4` `< 6` [#77](https://github.com/logstash-plugins/logstash-input-twitter/pull/77)
 
 ## 4.1.0
  - Feat: optional target + ecs_compatibility [#72](https://github.com/logstash-plugins/logstash-input-twitter/pull/72)
