@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name            = 'logstash-input-twitter'
-  s.version         = '4.1.0'
+  s.version         = '4.1.1'
   s.licenses        = ['Apache License (2.0)']
   s.summary         = "Reads events from the Twitter Streaming API"
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
@@ -18,9 +18,10 @@ Gem::Specification.new do |s|
   # Special flag to let us know this is actually a logstash plugin
   s.metadata = { "logstash_plugin" => "true", "logstash_group" => "input" }
 
-  # public_suffix 3.x+ includes ruby syntax from 2.1
-  # This effectively requires Logstash >= 6.x
-  s.required_ruby_version = '>= 2.1.0'
+  # Logstash 7.17.x-8.x uses ruby 2.5-3.1 compatibility
+  # public_suffix 4.x+ includes ruby syntax from 2.3
+  # public_suffix 5.x+ includes ruby syntax from 2.6
+  s.required_ruby_version = '>= 2.3'
 
   # Gem dependencies
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
@@ -29,7 +30,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'logstash-mixin-validator_support', '~> 1.0'
   s.add_runtime_dependency 'twitter', '6.2.0'
   s.add_runtime_dependency 'http-form_data', '~> 2'
-  s.add_runtime_dependency 'public_suffix', '~> 3'
+  s.add_runtime_dependency 'public_suffix', '> 4', '< 6'
   s.add_runtime_dependency 'stud', '>= 0.0.22', '< 0.1'
 
   s.add_development_dependency 'logstash-devutils'
