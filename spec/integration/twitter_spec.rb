@@ -1,6 +1,3 @@
-__END__
-# this test is quite unreliable - commenting it out
-
 require_relative "../spec_helper"
 
 describe LogStash::Inputs::Twitter do
