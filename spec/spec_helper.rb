@@ -1,7 +1,7 @@
 require 'logstash/devutils/rspec/spec_helper'
-require 'logstash/inputs/twitter'
-require 'twitter'
 require 'rspec_sequencing'
+
+require 'logstash/inputs/twitter'
 
 creds_file_path = File.expand_path('spec/integration_credentials.rb')
 if File.exist?(creds_file_path)
